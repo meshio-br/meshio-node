@@ -93,7 +93,7 @@ Verifique a assinatura com o corpo **bruto** da requisição:
 
 ```ts
 import { createServer } from 'node:http';
-import Meshio, { WebhookVerificationError } from '@meshio/sdk';
+import Meshio, { WebhookVerificationError, isEventType } from '@meshio/sdk';
 
 const secret = process.env.MESHIO_WEBHOOK_SECRET!;
 
@@ -102,8 +102,8 @@ createServer(async (req, res) => {
   for await (const chunk of req) chunks.push(chunk as Buffer);
   try {
     const event = Meshio.webhooks.verify(Buffer.concat(chunks), req.headers, secret);
-    if (event.event_type === 'message.received') {
-      console.log('mensagem de', event.data.from);
+    if (isEventType(event, 'message.received')) {
+      console.log('mensagem de', event.data.from); // data tipado pelo event_type
     }
     res.writeHead(200).end(); // responda 2xx rápido; deduplique por event.event_id
   } catch (err) {
@@ -112,7 +112,7 @@ createServer(async (req, res) => {
 }).listen(3000);
 ```
 
-`verify(rawBody, headers, secret, tolerance = 300)` (também `constructEvent`) confere `Meshio-Signature` (`v1=<hex>`, aceita várias durante a rotação do segredo) com comparação em tempo constante e rejeita timestamps a mais de 5 minutos. Eventos de tipos novos não quebram: `event.data` vem como objeto genérico. Com Express, use `express.raw({ type: 'application/json' })` nessa rota.
+`verify(rawBody, headers, secret, tolerance = 300)` (também `constructEvent`) confere `Meshio-Signature` (`v1=<hex>`, aceita várias durante a rotação do segredo) com comparação em tempo constante e rejeita timestamps a mais de 5 minutos. `isEventType` estreita o tipo de `event.data`; eventos de tipos novos não quebram (`data` vem como objeto genérico). Com Express, use `express.raw({ type: 'application/json' })` nessa rota.
 
 ## Erros e novas tentativas
 
