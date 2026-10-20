@@ -2,6 +2,16 @@
 
 Todas as mudanças relevantes deste pacote. Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Alterado
+
+- Regra única de novas tentativas: 429 e falha de conexão antes do envio sempre; 5xx e tempo esgotado só em `GET` ou com `Idempotency-Key`; `PUT` deixa de ser tratado como repetível.
+
+### Adicionado
+
+- `MeshioError.messagePt` com a explicação em português de `details.message_pt`; documentação esclarece que `message` pode vir em inglês.
+
 ## [0.1.0] - 2026-10-20
 
 ### Adicionado

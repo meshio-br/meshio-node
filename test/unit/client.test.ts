@@ -118,6 +118,33 @@ describe('mapeamento de erros', () => {
     expect(err.requestId).toBe('req_hdr');
   });
 
+  it('expõe details.message_pt em messagePt e fields junto com field', async () => {
+    const f = mockFetch(
+      json(422, {
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: 'Invalid phone number',
+          details: {
+            field: 'to',
+            fields: { to: 'Telefone inválido.' },
+            message_pt: 'Telefone inválido.',
+          },
+        },
+      }),
+    );
+    const err = await client(f.fn, { maxRetries: 0 })
+      .messages.send(sendBody)
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(ValidationError);
+    expect(err.message).toBe('Invalid phone number');
+    expect(err.messagePt).toBe('Telefone inválido.');
+    expect(err.fields).toEqual({ to: 'Telefone inválido.' });
+    const plain = await client(mockFetch(apiError(404, 'NOT_FOUND', 'x')).fn)
+      .businesses.get('b')
+      .catch((e) => e);
+    expect(plain.messagePt).toBeUndefined();
+  });
+
   it('POLICY_BLOCKED → PolicyBlockedError preservando status', async () => {
     const f = mockFetch(apiError(422, 'POLICY_BLOCKED', 'bloqueado', { reason: 'opt_out' }));
     const err = await client(f.fn)
@@ -194,6 +221,43 @@ describe('novas tentativas', () => {
     await expect(client(g.fn).templates.submit('t')).rejects.toBeInstanceOf(ConnectionError);
     expect(f.calls).toHaveLength(1);
     expect(g.calls).toHaveLength(1);
+  });
+
+  it('429 é repetido mesmo em POST sem idempotência', async () => {
+    const f = mockFetch(json(429, {}, { 'retry-after': '1' }), json(200, { ok: 1 }));
+    const m = client(f.fn);
+    const waits: number[] = [];
+    m.http.sleep = async (ms) => {
+      waits.push(ms);
+    };
+    await expect(m.webhookEndpoints.test('we_1')).resolves.toEqual({ ok: 1 });
+    expect(waits).toEqual([1000]);
+  });
+
+  it('falha de conexão antes do envio é repetida em qualquer método', async () => {
+    const refused = Object.assign(new TypeError('fetch failed'), {
+      cause: Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+    });
+    const f = mockFetch(refused, json(200, { ok: 1 }));
+    await expect(client(f.fn).templates.submit('t')).resolves.toEqual({ ok: 1 });
+    expect(f.calls).toHaveLength(2);
+  });
+
+  it('timeout em POST sem idempotência não é repetido; com chave é', async () => {
+    let calls = 0;
+    const hang = (_: string, init: RequestInit) => {
+      calls++;
+      return new Promise<Response>((_r, reject) =>
+        init.signal?.addEventListener('abort', () => reject(new Error('aborted'))),
+      );
+    };
+    const m = new Meshio({ apiKey: 'k', fetch: hang, timeout: 10 });
+    m.http.sleep = async () => undefined;
+    await expect(m.webhookEndpoints.test('we_1')).rejects.toBeInstanceOf(TimeoutError);
+    expect(calls).toBe(1);
+    calls = 0;
+    await expect(m.messages.send(sendBody)).rejects.toBeInstanceOf(TimeoutError);
+    expect(calls).toBe(3);
   });
 
   it('GET repete em erro de rede', async () => {

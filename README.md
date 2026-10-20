@@ -116,7 +116,7 @@ createServer(async (req, res) => {
 
 ## Erros e novas tentativas
 
-Respostas de erro viram exceções tipadas, todas subclasses de `MeshioError` com `status`, `code`, `message`, `details` e `requestId`:
+Respostas de erro viram exceções tipadas, todas subclasses de `MeshioError` com `status`, `code`, `message`, `messagePt`, `details` e `requestId`. A `message` vem da API e é informativa (pode estar em inglês); a explicação em português fica em `messagePt` (de `details.message_pt`) e, em erros de validação, em `fields` (de `details.fields`, sempre presente):
 
 | Status/código     | Classe                  |
 | ----------------- | ----------------------- |
@@ -139,12 +139,18 @@ try {
 } catch (err) {
   if (err instanceof PolicyBlockedError) console.log('bloqueado:', err.details.reason);
   else if (err instanceof ValidationError) console.log(err.fields);
-  else if (err instanceof MeshioError) console.log(err.status, err.code, err.message, err.requestId);
+  else if (err instanceof MeshioError) console.log(err.status, err.code, err.messagePt ?? err.message, err.requestId);
   else throw err;
 }
 ```
 
-O SDK repete automaticamente (até `maxRetries`) em erro de rede, tempo esgotado, 429, 500, 502, 503 e 504, esperando o `Retry-After` quando houver ou 0,5 s, 1 s, 2 s… (máx. 8 s, com variação aleatória). Leituras (`GET`) sempre podem ser repetidas; `POST`/`PATCH`/`DELETE` só quando têm `Idempotency-Key` (`messages.send` e `billing.topups.create` com chave). Outros 4xx nunca são repetidos. Por chamada: `{ timeout, maxRetries, signal, idempotencyKey, headers }` no último argumento.
+O SDK faz até `maxRetries` novas tentativas (padrão 2), esperando o `Retry-After` quando houver ou 0,5 s, 1 s, 2 s… (máx. 8 s, com variação aleatória):
+
+- 429 e falha de conexão antes de a requisição sair (ex.: conexão recusada, DNS): sempre repetidos;
+- 500, 502, 503, 504 e tempo esgotado: repetidos só em `GET` ou quando há `Idempotency-Key` (`messages.send` e `billing.topups.create` com chave);
+- outros 4xx: nunca repetidos.
+
+Por chamada: `{ timeout, maxRetries, signal, idempotencyKey, headers }` no último argumento.
 
 ## Dinheiro em micros
 

@@ -1,4 +1,7 @@
-/** Erros do SDK. As mensagens vindas do servidor já estão em pt-BR e são repassadas sem tradução. */
+/**
+ * Erros do SDK. `message` vem do servidor e é informativa (pode estar em inglês); a explicação
+ * em pt-BR vem em `details.message_pt` (exposta em `messagePt`) e, em validação, em `details.fields`.
+ */
 
 export interface MeshioErrorInit {
   status?: number;
@@ -15,6 +18,8 @@ export class MeshioError extends Error {
   readonly details: Record<string, unknown>;
   readonly requestId: string | undefined;
   readonly headers: Headers | undefined;
+  /** Explicação em pt-BR enviada pela API em `details.message_pt`, quando houver. */
+  readonly messagePt: string | undefined;
 
   constructor(message: string, init: MeshioErrorInit = {}) {
     super(message, init.cause === undefined ? undefined : { cause: init.cause });
@@ -24,6 +29,8 @@ export class MeshioError extends Error {
     this.details = init.details ?? {};
     this.requestId = init.requestId;
     this.headers = init.headers;
+    const pt = this.details.message_pt;
+    this.messagePt = typeof pt === 'string' && pt ? pt : undefined;
   }
 }
 
