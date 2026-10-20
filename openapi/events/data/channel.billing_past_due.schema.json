@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/channel.billing_past_due.schema.json",
+  "title": "data for channel.billing_past_due",
+  "description": "A monthly number fee could not be debited (available credits below the fee). The number keeps working during a 3-day grace period (grace_until); the charge is retried every 15 minutes and right after credits are added.",
+  "allOf": [
+    { "$ref": "channel.billing.common.schema.json" },
+    { "type": "object", "properties": { "billing_state": { "const": "grace" } } }
+  ]
+}

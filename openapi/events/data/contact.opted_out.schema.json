@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/contact.opted_out.schema.json",
+  "title": "data for contact.opted_out",
+  "description": "A contact joined the business opt-out (suppression) list: they sent SAIR/PARAR/STOP/CANCELAR/DESCADASTRAR/REMOVER on WhatsApp (source=keyword), or the integrator added them via POST /v1/opt-outs or the panel. From now on Meshio refuses templates to this contact from this business (POLICY_BLOCKED recipient_opted_out) and revokes the live consent. Emitted once per entry.",
+  "type": "object",
+  "required": [
+    "business_id",
+    "phone",
+    "source",
+    "opt_out_id",
+    "opted_out_at"
+  ],
+  "properties": {
+    "business_id": {
+      "type": "string",
+      "pattern": "^biz_[A-Za-z0-9]+$"
+    },
+    "channel_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^chn_[A-Za-z0-9]+$",
+      "description": "Channel that received the keyword (null for API/panel)."
+    },
+    "phone": {
+      "type": "string",
+      "pattern": "^\\+[1-9][0-9]{6,14}$",
+      "description": "Contact phone in E.164."
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "keyword",
+        "api",
+        "panel"
+      ]
+    },
+    "keyword": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Keyword received, upper case (e.g. SAIR), when source=keyword."
+    },
+    "opt_out_id": {
+      "type": "string",
+      "pattern": "^opt_[A-Za-z0-9]+$"
+    },
+    "opted_out_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

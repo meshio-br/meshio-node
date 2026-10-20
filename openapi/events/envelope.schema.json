@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/envelope.schema.json",
+  "title": "Meshio outbound webhook event envelope (v1)",
+  "description": "Body of every POST delivered to an integrator webhook endpoint. Signed with Meshio-Signature: v1=hex(HMAC_SHA256(secret, \"{Meshio-Timestamp}.{raw_body}\")). Delivery is at-least-once: deduplicate by event_id. Unknown fields must be ignored.",
+  "type": "object",
+  "required": ["event_id", "event_type", "occurred_at", "business_id", "channel_id", "data"],
+  "properties": {
+    "event_id": { "type": "string", "pattern": "^evt_[A-Za-z0-9]+$", "description": "Stable event id; equals the Meshio-Event-Id header." },
+    "event_type": {
+      "type": "string",
+      "description": "Known values are listed; new types may be added (ignore unknown ones).",
+      "examples": [
+        "channel.connected",
+        "channel.attention_required",
+        "channel.disconnected",
+        "message.received",
+        "message.status_changed",
+        "template.status_changed",
+        "webhook.test",
+        "billing.balance_low",
+        "billing.balance_added",
+        "billing.charges_pending",
+        "billing.trial_ending",
+        "billing.trial_ended",
+        "channel.billing_past_due",
+        "channel.billing_suspended",
+        "channel.billing_resumed",
+        "channel.health_changed",
+        "contact.opted_out",
+        "contact.opted_in",
+        "message.policy_blocked",
+        "business.compliance_hold",
+        "channel.compliance_hold",
+        "business.allowance_warning",
+        "business.allowance_reached"
+      ]
+    },
+    "occurred_at": { "type": "string", "format": "date-time", "description": "UTC ISO 8601 time of the underlying fact." },
+    "business_id": { "type": ["string", "null"], "pattern": "^biz_[A-Za-z0-9]+$" },
+    "channel_id": { "type": ["string", "null"], "pattern": "^chn_[A-Za-z0-9]+$" },
+    "data": { "type": "object" }
+  },
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": { "properties": { "event_type": { "const": "channel.connected" } } },
+      "then": { "properties": { "data": { "$ref": "data/channel.connected.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "channel.attention_required" } } },
+      "then": { "properties": { "data": { "$ref": "data/channel.attention_required.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "channel.disconnected" } } },
+      "then": { "properties": { "data": { "$ref": "data/channel.disconnected.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "message.received" } } },
+      "then": { "properties": { "data": { "$ref": "data/message.received.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "message.status_changed" } } },
+      "then": { "properties": { "data": { "$ref": "data/message.status_changed.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "template.status_changed" } } },
+      "then": { "properties": { "data": { "$ref": "data/template.status_changed.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "webhook.test" } } },
+      "then": { "properties": { "data": { "$ref": "data/webhook.test.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "billing.balance_low" } } },
+      "then": { "properties": { "data": { "$ref": "data/billing.balance_low.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "billing.balance_added" } } },
+      "then": { "properties": { "data": { "$ref": "data/billing.balance_added.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "billing.charges_pending" } } },
+      "then": { "properties": { "data": { "$ref": "data/billing.charges_pending.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "billing.trial_ending" } } },
+      "then": { "properties": { "data": { "$ref": "data/billing.trial_ending.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "billing.trial_ended" } } },
+      "then": { "properties": { "data": { "$ref": "data/billing.trial_ended.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "channel.billing_past_due" } } },
+      "then": { "properties": { "data": { "$ref": "data/channel.billing_past_due.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "channel.billing_suspended" } } },
+      "then": { "properties": { "data": { "$ref": "data/channel.billing_suspended.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "channel.billing_resumed" } } },
+      "then": { "properties": { "data": { "$ref": "data/channel.billing_resumed.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "channel.health_changed" } } },
+      "then": { "properties": { "data": { "$ref": "data/channel.health_changed.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "contact.opted_out" } } },
+      "then": { "properties": { "data": { "$ref": "data/contact.opted_out.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "contact.opted_in" } } },
+      "then": { "properties": { "data": { "$ref": "data/contact.opted_in.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "message.policy_blocked" } } },
+      "then": { "properties": { "data": { "$ref": "data/message.policy_blocked.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "business.compliance_hold" } } },
+      "then": { "properties": { "data": { "$ref": "data/business.compliance_hold.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "channel.compliance_hold" } } },
+      "then": { "properties": { "data": { "$ref": "data/channel.compliance_hold.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "business.allowance_warning" } } },
+      "then": { "properties": { "data": { "$ref": "data/business.allowance.common.schema.json" } } }
+    },
+    {
+      "if": { "properties": { "event_type": { "const": "business.allowance_reached" } } },
+      "then": { "properties": { "data": { "$ref": "data/business.allowance.common.schema.json" } } }
+    }
+  ]
+}

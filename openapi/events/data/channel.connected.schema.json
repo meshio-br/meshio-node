@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/channel.connected.schema.json",
+  "title": "data for channel.connected",
+  "description": "Emitted only after the backend validated the Meta authorization, subscribed the app to the WABA and verified the phone number.",
+  "allOf": [
+    { "$ref": "channel.common.schema.json" },
+    {
+      "type": "object",
+      "required": ["status", "waba_id", "phone_number_id", "display_phone_number"],
+      "properties": {
+        "status": { "const": "active" },
+        "waba_id": { "type": "string" },
+        "phone_number_id": { "type": "string" },
+        "display_phone_number": { "type": "string" },
+        "connect_link_id": {
+          "type": "string",
+          "pattern": "^cnl_[A-Za-z0-9]+$",
+          "description": "Present when the business owner connected the number through a hosted connection link (POST /v1/connect-links)."
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/message.received.schema.json",
+  "title": "data for message.received",
+  "description": "A message from a contact (direction=inbound, origin=customer) or, on coexistence channels, an echo of a message sent from the WhatsApp Business App (direction=outbound, origin=business_app). Never auto-reply unless direction=inbound AND origin=customer.",
+  "type": "object",
+  "required": ["message_id", "direction", "origin", "type", "from", "to"],
+  "properties": {
+    "message_id": { "type": "string", "pattern": "^msg_[A-Za-z0-9]+$" },
+    "direction": { "type": "string", "enum": ["inbound", "outbound"] },
+    "origin": { "type": "string", "enum": ["customer", "business_app", "unknown"] },
+    "type": { "type": "string", "enum": ["text", "template", "interactive_reply", "unsupported"], "description": "`interactive_reply` (since v0.14.0): the contact tapped a template quick reply button or answered an interactive message; see `reply`. New types may be added; treat unknown values as unsupported." },
+    "from": { "type": "string", "pattern": "^\\+[1-9][0-9]{6,14}$", "description": "E.164 sender." },
+    "to": { "type": "string", "pattern": "^\\+[1-9][0-9]{6,14}$", "description": "E.164 recipient." },
+    "text": {
+      "type": ["object", "null"],
+      "required": ["body"],
+      "properties": { "body": { "type": "string" } }
+    },
+    "reply": {
+      "type": ["object", "null"],
+      "description": "Click data for type=interactive_reply (null otherwise).",
+      "required": ["kind", "title"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["template_quick_reply", "button_reply", "list_reply"], "description": "template_quick_reply: quick reply button of a template (Meta type=button); button_reply/list_reply: reply to an interactive message." },
+        "id": { "type": ["string", "null"], "description": "Button payload (template quick reply) or the reply/row id (interactive)." },
+        "title": { "type": "string", "description": "Text the contact saw and tapped." },
+        "description": { "type": ["string", "null"], "description": "List row description (list_reply only)." }
+      }
+    },
+    "context": {
+      "type": ["object", "null"],
+      "description": "Message the contact replied to (Meta context.id): quoted replies and button clicks.",
+      "required": ["meta_message_id"],
+      "properties": {
+        "meta_message_id": { "type": "string" },
+        "message_id": { "type": ["string", "null"], "pattern": "^msg_[A-Za-z0-9]+$", "description": "Meshio id when the replied message belongs to this integrator." },
+        "type": { "type": ["string", "null"] },
+        "template_name": { "type": ["string", "null"], "description": "Template of the replied message, when it was a template." }
+      }
+    },
+    "contact_name": { "type": ["string", "null"], "description": "WhatsApp profile name of the contact when provided by Meta." },
+    "meta_message_id": { "type": ["string", "null"] },
+    "meta_timestamp": { "type": ["string", "null"], "format": "date-time" },
+    "imported": { "type": "boolean", "default": false, "description": "True for messages from coexistence history sync (best effort); do not treat as new." }
+  },
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": { "properties": { "origin": { "const": "business_app" } } },
+      "then": { "properties": { "direction": { "const": "outbound" } } }
+    },
+    {
+      "if": { "properties": { "origin": { "const": "customer" } } },
+      "then": { "properties": { "direction": { "const": "inbound" } } }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/channel.disconnected.schema.json",
+  "title": "data for channel.disconnected",
+  "description": "Channel disconnected by a user/system or revoked on Meta. New sends are rejected with CHANNEL_NOT_ACTIVE. History is not deleted by disconnection.",
+  "allOf": [
+    { "$ref": "channel.common.schema.json" },
+    {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["disconnected", "revoked"] }
+      }
+    }
+  ]
+}

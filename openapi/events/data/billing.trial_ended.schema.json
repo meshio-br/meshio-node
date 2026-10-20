@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/billing.trial_ended.schema.json",
+  "title": "data for billing.trial_ended",
+  "description": "The trial period ended: monthly number fees start and the normal model applies. Envelope business_id and channel_id are null.",
+  "type": "object",
+  "required": [
+    "ended_at"
+  ],
+  "properties": {
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,13 @@
+{
+  "event_id": "evt_01J8Z3Q7K2M4N6P8R0S2T4V023",
+  "occurred_at": "2026-10-11T14:05:00Z",
+  "business_id": null,
+  "channel_id": null,
+  "event_type": "billing.trial_ending",
+  "data": {
+    "ends_at": "2026-10-25T14:05:00Z",
+    "days_left": 3,
+    "bonus_balance_micros": "7500000",
+    "available_micros": "7500000"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "event_id": "evt_01J8Z3Q7K2M4N6P8R0S2T4V044",
+  "event_type": "message.policy_blocked",
+  "occurred_at": "2026-09-27T14:10:00Z",
+  "business_id": "biz_01J8Z2A4B6C8D0E2F4G6H8J0K2",
+  "channel_id": "chn_01J8Z2M4N6P8Q0R2S4T6V8W0X2",
+  "data": {
+    "decision_id": "pdc_01J8Z3Q7K2M4N6P8R0S2T4V045",
+    "business_id": "biz_01J8Z2A4B6C8D0E2F4G6H8J0K2",
+    "channel_id": "chn_01J8Z2M4N6P8Q0R2S4T6V8W0X2",
+    "to": "+5511988887777",
+    "type": "template",
+    "template": {
+      "name": "order_update",
+      "language": "pt_BR"
+    },
+    "reason": "link_not_allowed",
+    "rule": "links",
+    "message": "A mensagem tem um link não permitido (encurtador, endereço IP, domínio com caracteres enganosos ou protocolo diferente de http/https). Use o link completo do seu domínio.",
+    "details": {
+      "link_issue": "url_shortener",
+      "host": "bit.ly"
+    },
+    "client_reference": "order-1234",
+    "blocked_at": "2026-09-27T14:10:00+00:00"
+  }
+}

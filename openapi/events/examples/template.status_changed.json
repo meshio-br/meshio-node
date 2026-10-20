@@ -1,0 +1,17 @@
+{
+  "event_id": "evt_01J8Z3Q7K2M4N6P8R0S2T4V006",
+  "event_type": "template.status_changed",
+  "occurred_at": "2026-09-24T12:30:00Z",
+  "business_id": "biz_01J8Z2A4B6C8D0E2F4G6H8J0K2",
+  "channel_id": "chn_01J8Z2M4N6P8Q0R2S4T6V8W0X2",
+  "data": {
+    "template_id": "tpl_01J8Z1A2B3C4D5E6F7G8H9J0K1",
+    "meta_template_id": "1234567890123456",
+    "name": "order_update",
+    "language": "pt_BR",
+    "category": "UTILITY",
+    "status": "approved",
+    "previous_status": "pending",
+    "rejection_reason": null
+  }
+}

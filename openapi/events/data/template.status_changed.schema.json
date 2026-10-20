@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/template.status_changed.schema.json",
+  "title": "data for template.status_changed",
+  "description": "Template status changed on Meta (source of truth). Only status=approved templates can be sent. Since v0.12.0 a template held for Meshio review (pending_review) that a Meshio operator refuses changes to rejected with a rejection_reason starting with 'Recusado pela Meshio: '.",
+  "type": "object",
+  "required": ["template_id", "name", "language", "category", "status", "previous_status"],
+  "properties": {
+    "template_id": { "type": "string", "pattern": "^tpl_[A-Za-z0-9]+$" },
+    "meta_template_id": { "type": ["string", "null"] },
+    "name": { "type": "string" },
+    "language": { "type": "string", "examples": ["pt_BR", "en_US"] },
+    "category": { "type": "string", "enum": ["MARKETING", "UTILITY", "AUTHENTICATION"] },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "pending_review", "pending", "approved", "rejected", "paused", "disabled", "deleted"]
+    },
+    "previous_status": {
+      "type": ["string", "null"],
+      "enum": ["draft", "pending_review", "pending", "approved", "rejected", "paused", "disabled", "deleted", null]
+    },
+    "rejection_reason": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

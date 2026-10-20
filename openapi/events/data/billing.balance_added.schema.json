@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/billing.balance_added.schema.json",
+  "title": "data for billing.balance_added",
+  "description": "Money entered the integrator's BRL wallet: a confirmed top-up, a top-up bonus or trial promotional balance, an opening balance or a positive operator adjustment. Envelope business_id and channel_id are null.",
+  "type": "object",
+  "required": [
+    "entry_id",
+    "kind",
+    "amount_micros",
+    "balance_micros",
+    "available_micros",
+    "topup_id"
+  ],
+  "properties": {
+    "entry_id": {
+      "type": "string",
+      "pattern": "^wle_[A-Za-z0-9]+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "topup",
+        "bonus",
+        "opening_balance",
+        "adjustment",
+        "chargeback_reversal"
+      ]
+    },
+    "amount_micros": {
+      "type": "string",
+      "pattern": "^-?[0-9]+$",
+      "description": "Amount added. Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "balance_micros": {
+      "type": "string",
+      "pattern": "^-?[0-9]+$",
+      "description": "Wallet balance after the entry. Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "available_micros": {
+      "type": "string",
+      "pattern": "^-?[0-9]+$",
+      "description": "Available after the entry. Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "topup_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Top-up that originated the entry (topup and campaign bonus)."
+    }
+  },
+  "additionalProperties": true
+}

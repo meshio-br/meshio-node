@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/channel.common.schema.json",
+  "title": "Channel snapshot shared by channel.* events",
+  "type": "object",
+  "required": ["channel_id", "business_id", "mode", "status", "previous_status", "status_reason", "capabilities", "environment"],
+  "properties": {
+    "channel_id": { "type": "string", "pattern": "^chn_[A-Za-z0-9]+$" },
+    "business_id": { "type": "string", "pattern": "^biz_[A-Za-z0-9]+$" },
+    "mode": { "type": "string", "enum": ["cloud_api", "coexistence"] },
+    "status": {
+      "type": "string",
+      "enum": ["not_started", "pending_authorization", "pending_setup", "active", "attention_required", "disconnected", "revoked"]
+    },
+    "previous_status": {
+      "type": ["string", "null"],
+      "enum": ["not_started", "pending_authorization", "pending_setup", "active", "attention_required", "disconnected", "revoked", null]
+    },
+    "status_reason": { "type": ["string", "null"], "description": "Machine-readable reason (e.g. meta_auth_revoked, health_check_failed); null when not applicable." },
+    "source": {
+      "type": "string",
+      "enum": ["user", "meta", "system", "health_check"],
+      "description": "Who caused the transition."
+    },
+    "display_phone_number": { "type": ["string", "null"], "description": "Business phone number as reported by Meta." },
+    "verified_name": { "type": ["string", "null"] },
+    "waba_id": { "type": ["string", "null"] },
+    "phone_number_id": { "type": ["string", "null"] },
+    "quality_rating": { "type": ["string", "null"] },
+    "capabilities": {
+      "type": "object",
+      "required": ["send_text", "send_template", "receive", "business_app_echoes", "history_sync"],
+      "properties": {
+        "send_text": { "type": "boolean" },
+        "send_template": { "type": "boolean" },
+        "receive": { "type": "boolean" },
+        "business_app_echoes": { "type": "boolean" },
+        "history_sync": { "type": "boolean" }
+      },
+      "additionalProperties": { "type": "boolean" }
+    },
+    "environment": { "type": "string", "enum": ["simulator", "live"] }
+  },
+  "additionalProperties": true
+}

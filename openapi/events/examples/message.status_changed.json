@@ -1,0 +1,20 @@
+{
+  "event_id": "evt_01J8Z3Q7K2M4N6P8R0S2T4V005",
+  "event_type": "message.status_changed",
+  "occurred_at": "2026-09-24T14:01:05Z",
+  "business_id": "biz_01J8Z2A4B6C8D0E2F4G6H8J0K2",
+  "channel_id": "chn_01J8Z2M4N6P8Q0R2S4T6V8W0X2",
+  "data": {
+    "message_id": "msg_01J8Z3S2T4V6W8X0Y2Z4A6B8C0",
+    "direction": "outbound",
+    "origin": "api",
+    "type": "template",
+    "status": "delivered",
+    "previous_status": "accepted_by_meta",
+    "to": "+5511988887777",
+    "client_reference": "order_1234",
+    "meta_message_id": "wamid.HBgNNTUxMTk4ODg4Nzc3NxUCABEYEjk5",
+    "meta_occurred_at": "2026-09-24T14:01:03Z",
+    "error": null
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "event_id": "evt_01J8Z3Q7K2M4N6P8R0S2T4V003",
+  "event_type": "channel.disconnected",
+  "occurred_at": "2026-09-25T10:15:30Z",
+  "business_id": "biz_01J8Z2A4B6C8D0E2F4G6H8J0K2",
+  "channel_id": "chn_01J8Z2M4N6P8Q0R2S4T6V8W0X2",
+  "data": {
+    "channel_id": "chn_01J8Z2M4N6P8Q0R2S4T6V8W0X2",
+    "business_id": "biz_01J8Z2A4B6C8D0E2F4G6H8J0K2",
+    "mode": "cloud_api",
+    "display_phone_number": "+55 11 3000-0000",
+    "verified_name": "Pizzaria Exemplo",
+    "waba_id": "102290129340398",
+    "phone_number_id": "106540352242922",
+    "quality_rating": "GREEN",
+    "capabilities": {
+      "send_text": true,
+      "send_template": true,
+      "receive": true,
+      "business_app_echoes": false,
+      "history_sync": false
+    },
+    "environment": "simulator",
+    "status": "disconnected",
+    "previous_status": "active",
+    "status_reason": "disconnected_by_user",
+    "source": "user"
+  }
+}

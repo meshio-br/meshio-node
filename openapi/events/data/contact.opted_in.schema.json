@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/contact.opted_in.schema.json",
+  "title": "data for contact.opted_in",
+  "description": "A contact left the business opt-out list: they sent VOLTAR/START on WhatsApp (source=keyword; a consent with source whatsapp is recorded), a consent captured after the opt-out was registered (source=consent), or the integrator removed them via DELETE /v1/opt-outs or the panel (source=api|panel).",
+  "type": "object",
+  "required": [
+    "business_id",
+    "phone",
+    "source",
+    "opted_in_at"
+  ],
+  "properties": {
+    "business_id": {
+      "type": "string",
+      "pattern": "^biz_[A-Za-z0-9]+$"
+    },
+    "channel_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^chn_[A-Za-z0-9]+$"
+    },
+    "phone": {
+      "type": "string",
+      "pattern": "^\\+[1-9][0-9]{6,14}$",
+      "description": "Contact phone in E.164."
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "keyword",
+        "consent",
+        "api",
+        "panel"
+      ]
+    },
+    "keyword": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "VOLTAR or START when source=keyword."
+    },
+    "consent_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^cns_[A-Za-z0-9]+$",
+      "description": "Consent that lifted the opt-out (source=consent)."
+    },
+    "opted_in_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

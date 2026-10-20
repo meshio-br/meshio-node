@@ -1,0 +1,20 @@
+{
+  "event_id": "evt_01J8Z3Q7K2M4N6P8R0S2T4V050",
+  "event_type": "channel.compliance_hold",
+  "occurred_at": "2026-09-27T14:10:00Z",
+  "business_id": "biz_01J8Z2A4B6C8D0E2F4G6H8J0K2",
+  "channel_id": "chn_01J8Z2M4N6P8Q0R2S4T6V8W0X2",
+  "data": {
+    "hold_id": "chd_01J8Z3Q7K2M4N6P8R0S2T4V051",
+    "state": "active",
+    "scope": "channel",
+    "business_id": "biz_01J8Z2A4B6C8D0E2F4G6H8J0K2",
+    "channel_id": "chn_01J8Z2M4N6P8Q0R2S4T6V8W0X2",
+    "display_phone_number": "+55 11 3000-0000",
+    "reason": "quality_red",
+    "source": "meta_signal",
+    "message": "A qualidade do número ficou vermelha na Meta",
+    "created_at": "2026-09-27T14:10:00Z",
+    "lifted_at": null
+  }
+}

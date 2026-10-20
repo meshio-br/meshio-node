@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/channel.attention_required.schema.json",
+  "title": "data for channel.attention_required",
+  "description": "Channel needs action (revoked token, lost scope, failed health check, quality problem). Sends are blocked until the channel returns to active.",
+  "allOf": [
+    { "$ref": "channel.common.schema.json" },
+    {
+      "type": "object",
+      "required": ["status", "status_reason"],
+      "properties": {
+        "status": { "const": "attention_required" },
+        "status_reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  ]
+}

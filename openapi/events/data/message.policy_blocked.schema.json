@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/message.policy_blocked.schema.json",
+  "title": "data for message.policy_blocked",
+  "description": "Meshio refused a send before calling Meta (the API answered 422 POLICY_BLOCKED; no message was created and no credits were reserved). Use `reason` (stable code) and `message` (pt-BR) to fix the cause. The content is never included.",
+  "type": "object",
+  "required": [
+    "decision_id",
+    "business_id",
+    "channel_id",
+    "to",
+    "type",
+    "reason",
+    "rule",
+    "message",
+    "blocked_at"
+  ],
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "pattern": "^pdc_[A-Za-z0-9]+$"
+    },
+    "business_id": {
+      "type": "string",
+      "pattern": "^biz_[A-Za-z0-9]+$"
+    },
+    "channel_id": {
+      "type": "string",
+      "pattern": "^chn_[A-Za-z0-9]+$"
+    },
+    "to": {
+      "type": "string",
+      "pattern": "^\\+[1-9][0-9]{6,14}$",
+      "description": "Contact phone in E.164."
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "text",
+        "template"
+      ]
+    },
+    "template": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "name",
+        "language"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        }
+      }
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "integrator_not_approved",
+        "business_suspended",
+        "business_not_verified",
+        "channel_compliance_hold",
+        "recipient_opted_out",
+        "opt_in_required",
+        "link_not_allowed",
+        "link_malicious",
+        "content_suspected_scam",
+        "volume_limit_reached"
+      ],
+      "description": "New reasons may be added; treat unknown values as a generic policy refusal."
+    },
+    "rule": {
+      "type": "string",
+      "enum": [
+        "trust",
+        "opt_out",
+        "opt_in",
+        "links",
+        "scam",
+        "volume"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "description": "Explanation in pt-BR (same as the API error)."
+    },
+    "details": {
+      "type": "object",
+      "description": "Structured details, e.g. link_issue and host (links), score and signals (scam), limit/daily_cap/retry_after_seconds (volume)."
+    },
+    "client_reference": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "blocked_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

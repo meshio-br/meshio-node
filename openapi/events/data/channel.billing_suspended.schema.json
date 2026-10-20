@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/channel.billing_suspended.schema.json",
+  "title": "data for channel.billing_suspended",
+  "description": "The grace period ended with the fee still overdue: outbound sends through this number now answer 402 CHANNEL_BILLING_SUSPENDED. Inbound messages keep being received and delivered to webhooks; the Meta connection is untouched.",
+  "allOf": [
+    { "$ref": "channel.billing.common.schema.json" },
+    { "type": "object", "properties": { "billing_state": { "const": "suspended" } } }
+  ]
+}

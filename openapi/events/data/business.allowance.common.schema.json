@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/business.allowance.common.schema.json",
+  "title": "data for business.allowance_warning and business.allowance_reached",
+  "description": "A business (customer) used 80% (business.allowance_warning) or 100% (business.allowance_reached) of the monthly allowance set by the integrator. Usage = Meshio charges of the business's messages (sent and delivered + new inbound, including charges pending for balance) plus sends awaiting delivery, in the calendar month of America/Sao_Paulo; number fees do not count. Each event is sent at most once per business per month (crossing both thresholds at once sends only business.allowance_reached); changing the allowance re-arms the thresholds that end up above the usage. While reached, POST /v1/messages for the business's channels answers 402 BUSINESS_ALLOWANCE_REACHED; inbound messages keep being received. Envelope business_id = the business; channel_id is null.",
+  "type": "object",
+  "required": [
+    "business_id",
+    "period",
+    "used_micros",
+    "allowance_micros",
+    "percent"
+  ],
+  "properties": {
+    "business_id": {
+      "type": "string",
+      "pattern": "^biz_[A-Za-z0-9]+$"
+    },
+    "period": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "description": "Month YYYY-MM (America/Sao_Paulo)."
+    },
+    "used_micros": {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Usage in the month. Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "allowance_micros": {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Monthly allowance. Integer string in micros."
+    },
+    "percent": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "floor(used / allowance * 100); may exceed 100 (inbound messages are always charged)."
+    },
+    "resets_at": {
+      "type": "string",
+      "format": "date",
+      "description": "First day of the next month (YYYY-MM-DD), when usage resets."
+    }
+  },
+  "additionalProperties": true
+}

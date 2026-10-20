@@ -1,0 +1,82 @@
+{
+  "tolerance_seconds": 300,
+  "headers": {
+    "timestamp": "Meshio-Timestamp",
+    "signature": "Meshio-Signature",
+    "event_id": "Meshio-Event-Id"
+  },
+  "vectors": [
+    {
+      "name": "valid",
+      "secret": "whsec_test_4f2b9c1d8e7a6b5c4d3e2f1a",
+      "timestamp": 1792497600,
+      "now": 1792497610,
+      "body": "{\"event_id\":\"evt_01test\",\"event_type\":\"webhook.test\",\"occurred_at\":\"2026-10-20T12:00:00Z\",\"business_id\":null,\"channel_id\":null,\"data\":{}}",
+      "signature": "v1=c2e3cf535ddc57154bc054d8b3930c3922fd8f4de5e2896beabb927e89ddb86d",
+      "valid": true
+    },
+    {
+      "name": "rotation_two_signatures",
+      "secret": "whsec_test_4f2b9c1d8e7a6b5c4d3e2f1a",
+      "timestamp": 1792497600,
+      "now": 1792497600,
+      "body": "{\"event_id\":\"evt_01test\",\"event_type\":\"webhook.test\",\"occurred_at\":\"2026-10-20T12:00:00Z\",\"business_id\":null,\"channel_id\":null,\"data\":{}}",
+      "signature": "v1=c2e3cf535ddc57154bc054d8b3930c3922fd8f4de5e2896beabb927e89ddb86d,v1=fac77ee9562a4f853bfb985eff802d2075cc0349f6f148905be4babda5d7ce3b",
+      "valid": true
+    },
+    {
+      "name": "rotation_old_secret",
+      "secret": "whsec_test_old_9a8b7c6d5e4f3a2b1c0d",
+      "timestamp": 1792497600,
+      "now": 1792497600,
+      "body": "{\"event_id\":\"evt_01test\",\"event_type\":\"webhook.test\",\"occurred_at\":\"2026-10-20T12:00:00Z\",\"business_id\":null,\"channel_id\":null,\"data\":{}}",
+      "signature": "v1=c2e3cf535ddc57154bc054d8b3930c3922fd8f4de5e2896beabb927e89ddb86d,v1=fac77ee9562a4f853bfb985eff802d2075cc0349f6f148905be4babda5d7ce3b",
+      "valid": true
+    },
+    {
+      "name": "tampered_body",
+      "secret": "whsec_test_4f2b9c1d8e7a6b5c4d3e2f1a",
+      "timestamp": 1792497600,
+      "now": 1792497600,
+      "body": "{\"event_id\":\"evt_01test\",\"event_type\":\"message.received\",\"occurred_at\":\"2026-10-20T12:00:00Z\",\"business_id\":null,\"channel_id\":null,\"data\":{}}",
+      "signature": "v1=c2e3cf535ddc57154bc054d8b3930c3922fd8f4de5e2896beabb927e89ddb86d",
+      "valid": false
+    },
+    {
+      "name": "wrong_secret",
+      "secret": "whsec_test_old_9a8b7c6d5e4f3a2b1c0d",
+      "timestamp": 1792497600,
+      "now": 1792497600,
+      "body": "{\"event_id\":\"evt_01test\",\"event_type\":\"webhook.test\",\"occurred_at\":\"2026-10-20T12:00:00Z\",\"business_id\":null,\"channel_id\":null,\"data\":{}}",
+      "signature": "v1=c2e3cf535ddc57154bc054d8b3930c3922fd8f4de5e2896beabb927e89ddb86d",
+      "valid": false
+    },
+    {
+      "name": "too_old",
+      "secret": "whsec_test_4f2b9c1d8e7a6b5c4d3e2f1a",
+      "timestamp": 1792497600,
+      "now": 1792497901,
+      "body": "{\"event_id\":\"evt_01test\",\"event_type\":\"webhook.test\",\"occurred_at\":\"2026-10-20T12:00:00Z\",\"business_id\":null,\"channel_id\":null,\"data\":{}}",
+      "signature": "v1=c2e3cf535ddc57154bc054d8b3930c3922fd8f4de5e2896beabb927e89ddb86d",
+      "valid": false
+    },
+    {
+      "name": "too_far_in_future",
+      "secret": "whsec_test_4f2b9c1d8e7a6b5c4d3e2f1a",
+      "timestamp": 1792497600,
+      "now": 1792497299,
+      "body": "{\"event_id\":\"evt_01test\",\"event_type\":\"webhook.test\",\"occurred_at\":\"2026-10-20T12:00:00Z\",\"business_id\":null,\"channel_id\":null,\"data\":{}}",
+      "signature": "v1=c2e3cf535ddc57154bc054d8b3930c3922fd8f4de5e2896beabb927e89ddb86d",
+      "valid": false
+    },
+    {
+      "name": "missing_v1_prefix",
+      "secret": "whsec_test_4f2b9c1d8e7a6b5c4d3e2f1a",
+      "timestamp": 1792497600,
+      "now": 1792497600,
+      "body": "{\"event_id\":\"evt_01test\",\"event_type\":\"webhook.test\",\"occurred_at\":\"2026-10-20T12:00:00Z\",\"business_id\":null,\"channel_id\":null,\"data\":{}}",
+      "signature": "c2e3cf535ddc57154bc054d8b3930c3922fd8f4de5e2896beabb927e89ddb86d",
+      "valid": false
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "event_id": "evt_01J8Z3Q7K2M4N6P8R0S2T4V009",
+  "event_type": "message.status_changed",
+  "occurred_at": "2026-09-24T14:02:10Z",
+  "business_id": "biz_01J8Z2A4B6C8D0E2F4G6H8J0K2",
+  "channel_id": "chn_01J8Z2M4N6P8Q0R2S4T6V8W0X2",
+  "data": {
+    "message_id": "msg_01J8Z3V2W4X6Y8Z0A2B4C6D8E0",
+    "direction": "outbound",
+    "origin": "api",
+    "type": "text",
+    "status": "failed",
+    "previous_status": "accepted_by_meta",
+    "to": "+5511977776666",
+    "client_reference": null,
+    "meta_message_id": "wamid.HBgNNTUxMTk3Nzc3NjY2NhUCABEYEjAx",
+    "meta_occurred_at": "2026-09-24T14:02:08Z",
+    "error": {
+      "code": "META_MESSAGE_UNDELIVERABLE",
+      "message": "Meta reported the message as undeliverable"
+    }
+  }
+}

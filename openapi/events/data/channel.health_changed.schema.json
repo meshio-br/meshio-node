@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/channel.health_changed.schema.json",
+  "title": "data for channel.health_changed",
+  "description": "Meta health of a WhatsApp number changed: the sending status reported by Meta (health_status.can_send_message) changed, or the quality rating dropped (GREEN to YELLOW/RED, YELLOW to RED). The first reading only emits when the number is already limited or blocked. Read by the channel health check (every 30 minutes and after Meta quality webhooks).",
+  "type": "object",
+  "required": [
+    "channel_id",
+    "business_id",
+    "display_phone_number",
+    "can_send",
+    "previous_can_send",
+    "reason",
+    "quality_rating",
+    "previous_quality_rating",
+    "name_status",
+    "messaging_limit"
+  ],
+  "properties": {
+    "channel_id": { "type": "string", "pattern": "^chn_[A-Za-z0-9]+$" },
+    "business_id": { "type": "string", "pattern": "^biz_[A-Za-z0-9]+$" },
+    "display_phone_number": { "type": ["string", "null"] },
+    "can_send": {
+      "type": ["string", "null"],
+      "enum": ["available", "limited", "blocked", null],
+      "description": "available: meets all requirements; limited: sends with limitations (see reason); blocked: Meta rejects sends from this number. null = not read yet."
+    },
+    "previous_can_send": { "type": ["string", "null"], "enum": ["available", "limited", "blocked", null] },
+    "reason": {
+      "type": ["string", "null"],
+      "description": "First error description (blocked) or additional info (limited) sent by Meta, verbatim (usually English). null when available."
+    },
+    "quality_rating": { "type": ["string", "null"], "description": "Meta quality rating: GREEN, YELLOW, RED, NA or UNKNOWN." },
+    "previous_quality_rating": { "type": ["string", "null"] },
+    "name_status": {
+      "type": ["string", "null"],
+      "description": "Display name review: APPROVED, AVAILABLE_WITHOUT_REVIEW, DECLINED, EXPIRED, PENDING_REVIEW or NONE."
+    },
+    "messaging_limit": {
+      "type": ["string", "null"],
+      "description": "Meta messaging limit tier (whatsapp_business_manager_messaging_limit), e.g. TIER_250, TIER_2K, TIER_10K, TIER_100K, TIER_UNLIMITED."
+    },
+    "state": {
+      "type": "string",
+      "enum": ["available", "limited", "initiate_blocked", "blocked", "unknown"],
+      "description": "Since v0.13.0. Explained health: available (no Meta restriction); limited (sends normally up to the messaging limit for business-initiated conversations); initiate_blocked (replies within 24 hours work, templates are refused, e.g. payment method issue); blocked (Meta blocks sending); unknown (health not read yet)."
+    },
+    "headline": {
+      "type": "string",
+      "description": "Since v0.13.0. One pt-BR sentence explaining what the number can do now (same text as the panel)."
+    }
+  },
+  "additionalProperties": true
+}

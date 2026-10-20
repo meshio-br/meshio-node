@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/business.compliance_hold.schema.json",
+  "title": "data for business.compliance_hold",
+  "description": "Meshio suspended (state=active) or released (state=lifted) all sends of a business (customer) for compliance. Automatic holds come from Meta signals: account_update violation/restriction/ban/disable, 3+ templates paused in 7 days or 20+ Meta policy errors (131048, 131049, 368, 470) in 24 h; operators may also hold manually. While active, sends and new templates for the business are refused with 422 POLICY_BLOCKED (reason business_suspended) without calling Meta. Only a Meshio operator can lift a hold.",
+  "type": "object",
+  "required": ["hold_id", "state", "scope", "business_id", "reason", "source", "message", "created_at", "lifted_at"],
+  "properties": {
+    "hold_id": { "type": "string", "pattern": "^chd_[A-Za-z0-9]+$" },
+    "state": { "type": "string", "enum": ["active", "lifted"] },
+    "scope": { "type": "string", "const": "business" },
+    "business_id": { "type": "string", "pattern": "^biz_[A-Za-z0-9]+$" },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "meta_account_violation",
+        "meta_account_restriction",
+        "meta_account_banned",
+        "meta_account_disabled",
+        "templates_paused",
+        "meta_policy_errors",
+        "manual"
+      ]
+    },
+    "source": { "type": "string", "enum": ["meta_signal", "operator", "policy"] },
+    "message": { "type": "string", "description": "Short explanation in pt-BR." },
+    "created_at": { "type": "string", "format": "date-time" },
+    "lifted_at": { "type": ["string", "null"], "format": "date-time" }
+  },
+  "additionalProperties": true
+}

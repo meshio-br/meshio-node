@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/billing.trial_ending.schema.json",
+  "title": "data for billing.trial_ending",
+  "description": "The integrator's trial period ends soon (sent N days before and on the last day, once each). Envelope business_id and channel_id are null.",
+  "type": "object",
+  "required": [
+    "ends_at",
+    "days_left",
+    "bonus_balance_micros",
+    "available_micros"
+  ],
+  "properties": {
+    "ends_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "days_left": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "bonus_balance_micros": {
+      "type": "string",
+      "pattern": "^-?[0-9]+$",
+      "description": "Promotional/bonus balance still available. Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "available_micros": {
+      "type": "string",
+      "pattern": "^-?[0-9]+$",
+      "description": "Available balance. Integer string in micros (R$ 1 = \"1000000\")."
+    }
+  },
+  "additionalProperties": true
+}

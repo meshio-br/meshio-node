@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/channel.compliance_hold.schema.json",
+  "title": "data for channel.compliance_hold",
+  "description": "Meshio suspended (state=active) or released (state=lifted) sends of one WhatsApp number for compliance. Automatic holds happen when Meta's quality rating of the number turns RED; operators may also hold manually. While active, sends and new templates on the number are refused with 422 POLICY_BLOCKED (reason channel_compliance_hold) without calling Meta. Only a Meshio operator can lift a hold.",
+  "type": "object",
+  "required": [
+    "hold_id",
+    "state",
+    "scope",
+    "business_id",
+    "channel_id",
+    "display_phone_number",
+    "reason",
+    "source",
+    "message",
+    "created_at",
+    "lifted_at"
+  ],
+  "properties": {
+    "hold_id": { "type": "string", "pattern": "^chd_[A-Za-z0-9]+$" },
+    "state": { "type": "string", "enum": ["active", "lifted"] },
+    "scope": { "type": "string", "const": "channel" },
+    "business_id": { "type": "string", "pattern": "^biz_[A-Za-z0-9]+$" },
+    "channel_id": { "type": "string", "pattern": "^chn_[A-Za-z0-9]+$" },
+    "display_phone_number": { "type": ["string", "null"] },
+    "reason": { "type": "string", "enum": ["quality_red", "manual"] },
+    "source": { "type": "string", "enum": ["meta_signal", "operator", "policy"] },
+    "message": { "type": "string", "description": "Short explanation in pt-BR." },
+    "created_at": { "type": "string", "format": "date-time" },
+    "lifted_at": { "type": ["string", "null"], "format": "date-time" }
+  },
+  "additionalProperties": true
+}

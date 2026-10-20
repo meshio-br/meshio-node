@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/billing.balance_low.schema.json",
+  "title": "data for billing.balance_low",
+  "description": "The integrator's free BRL balance (balance - reserved - pending) crossed below the configured low-balance threshold. Sent at most once per crossing. Money values are integer strings in micros (millionths of BRL). Envelope business_id and channel_id are null.",
+  "type": "object",
+  "required": [
+    "balance_micros",
+    "reserved_micros",
+    "available_micros",
+    "low_balance_threshold_micros",
+    "balance"
+  ],
+  "properties": {
+    "balance_micros": {
+      "type": "string",
+      "pattern": "^-?[0-9]+$",
+      "description": "Paid + bonus balance. Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "reserved_micros": {
+      "type": "string",
+      "pattern": "^-?[0-9]+$",
+      "description": "Reserved for accepted sends awaiting delivery. Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "available_micros": {
+      "type": "string",
+      "pattern": "^-?[0-9]+$",
+      "description": "What new sends can still use (balance - reserved - pending + credit limit). Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "low_balance_threshold_micros": {
+      "type": "string",
+      "pattern": "^-?[0-9]+$",
+      "description": "Configured alert threshold. Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "balance": {
+      "type": "string",
+      "description": "Same as balance_micros as an exact decimal BRL string, e.g. \"12.5\"."
+    }
+  },
+  "additionalProperties": true
+}

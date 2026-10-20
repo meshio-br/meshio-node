@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/webhook.test.schema.json",
+  "title": "data for webhook.test",
+  "description": "Sent by POST /v1/webhook-endpoints/{id}/test to validate reachability and signature verification. Envelope business_id and channel_id are null.",
+  "type": "object",
+  "required": ["endpoint_id"],
+  "properties": {
+    "endpoint_id": { "type": "string", "pattern": "^whe_[A-Za-z0-9]+$" },
+    "message": { "type": "string" }
+  },
+  "additionalProperties": true
+}

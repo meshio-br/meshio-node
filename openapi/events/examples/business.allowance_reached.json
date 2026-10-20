@@ -1,0 +1,15 @@
+{
+  "event_id": "evt_01J8Z3Q7K2M4N6P8R0S2T4V0A2",
+  "occurred_at": "2026-10-20T15:30:00Z",
+  "business_id": "biz_01J8Z3Q7K2M4N6P8R0S2T4V0B1",
+  "channel_id": null,
+  "event_type": "business.allowance_reached",
+  "data": {
+    "business_id": "biz_01J8Z3Q7K2M4N6P8R0S2T4V0B1",
+    "period": "2026-10",
+    "used_micros": "100000000",
+    "allowance_micros": "100000000",
+    "percent": 100,
+    "resets_at": "2026-11-01"
+  }
+}
