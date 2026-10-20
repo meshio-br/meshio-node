@@ -291,3 +291,11 @@ describe('CSV e 204', () => {
     await expect(client(f.fn).webhookEndpoints.delete('we_1')).resolves.toBeUndefined();
   });
 });
+
+describe('versão', () => {
+  it('VERSION acompanha o package.json', async () => {
+    const { readFileSync } = await import('node:fs');
+    const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
+    expect(VERSION).toBe(pkg.version);
+  });
+});
