@@ -64,7 +64,28 @@ export interface ApiResponse<T> {
   idempotencyKey: string | undefined;
 }
 
-const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+const RETRYABLE_SERVER_STATUS = new Set([500, 502, 503, 504]);
+
+/** Códigos de erro que indicam falha ao abrir a conexão, ou seja, antes de enviar a requisição. */
+const CONNECT_ERROR_CODES = new Set([
+  'ECONNREFUSED',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'ENETUNREACH',
+  'EHOSTUNREACH',
+  'UND_ERR_CONNECT_TIMEOUT',
+]);
+
+/** Verdadeiro quando a falha ocorreu antes de a requisição ser enviada (nunca chegou à API). */
+export function isConnectFailure(err: unknown): boolean {
+  let cur: unknown = err;
+  for (let i = 0; i < 5 && cur && typeof cur === 'object'; i++) {
+    const code = (cur as { code?: unknown }).code;
+    if (typeof code === 'string' && CONNECT_ERROR_CODES.has(code)) return true;
+    cur = (cur as { cause?: unknown }).cause;
+  }
+  return false;
+}
 
 function env(name: string): string | undefined {
   const p = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
@@ -144,14 +165,14 @@ export class HttpClient {
       body = JSON.stringify(spec.body);
     }
     const url = this.buildUrl(spec.path, spec.query);
-    // Só repetimos requisições seguras ou protegidas por chave de idempotência.
-    const retrySafe =
-      spec.method === 'GET' || spec.method === 'PUT' || idempotencyKey !== undefined;
+    // Regra única de novas tentativas: 429 e falha de conexão antes do envio sempre;
+    // 5xx (500/502/503/504) e timeout só em GET ou com Idempotency-Key; outros 4xx nunca.
+    const retrySafe = spec.method === 'GET' || idempotencyKey !== undefined;
     const maxRetries = options.maxRetries ?? this.maxRetries;
     const timeout = options.timeout ?? this.timeout;
 
     for (let attempt = 0; ; attempt++) {
-      const canRetry = retrySafe && attempt < maxRetries;
+      const hasBudget = attempt < maxRetries;
       let response: Response;
       try {
         response = await this.fetchWithTimeout(
@@ -161,7 +182,8 @@ export class HttpClient {
           options.signal,
         );
       } catch (err) {
-        if (canRetry && !(err instanceof AbortedByUser)) {
+        const retryable = !(err instanceof AbortedByUser) && (retrySafe || isConnectFailure(err));
+        if (hasBudget && retryable) {
           await this.sleep(backoffMs(attempt));
           continue;
         }
@@ -180,7 +202,9 @@ export class HttpClient {
         };
       }
 
-      if (canRetry && RETRYABLE_STATUS.has(response.status)) {
+      const retryableStatus =
+        response.status === 429 || (retrySafe && RETRYABLE_SERVER_STATUS.has(response.status));
+      if (hasBudget && retryableStatus) {
         const ra = parseRetryAfter(response.headers.get('retry-after'));
         await response.arrayBuffer().catch(() => undefined);
         await this.sleep(ra !== undefined ? Math.min(ra * 1000, 60_000) : backoffMs(attempt));
