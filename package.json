@@ -12,13 +12,7 @@
   "bugs": {
     "url": "https://github.com/meshio-br/meshio-node/issues"
   },
-  "keywords": [
-    "meshio",
-    "whatsapp",
-    "whatsapp-business",
-    "sdk",
-    "api"
-  ],
+  "keywords": ["meshio", "whatsapp", "whatsapp-business", "sdk", "api"],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -36,19 +30,14 @@
     },
     "./package.json": "./package.json"
   },
-  "files": [
-    "dist",
-    "README.md",
-    "CHANGELOG.md",
-    "LICENSE"
-  ],
+  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
   "sideEffects": false,
   "engines": {
     "node": ">=18"
   },
   "scripts": {
     "build": "tsup",
-    "generate": "openapi-typescript openapi/openapi.json -o src/generated/openapi.ts",
+    "generate": "openapi-typescript openapi/openapi.json --default-non-nullable false -o src/generated/openapi.ts && node scripts/generate-events.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "format": "biome check --write .",
@@ -64,6 +53,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^20.19.43",
+    "json-schema-to-typescript": "^15.0.4",
     "openapi-typescript": "^7.13.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",

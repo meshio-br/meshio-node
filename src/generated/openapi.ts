@@ -1725,12 +1725,12 @@ export interface components {
              * @default choose
              * @enum {string}
              */
-            mode: "cloud_api" | "coexistence" | "choose";
+            mode?: "cloud_api" | "coexistence" | "choose";
             /**
              * Expires In Hours
              * @default 168
              */
-            expires_in_hours: number;
+            expires_in_hours?: number;
         };
         /** CreateSignupSessionIn */
         CreateSignupSessionIn: {
@@ -1802,7 +1802,7 @@ export interface components {
              * @default enabled
              * @enum {string}
              */
-            status: "enabled" | "disabled";
+            status?: "enabled" | "disabled";
         };
         /** DeliveryStatsOut */
         DeliveryStatsOut: {
@@ -1830,7 +1830,7 @@ export interface components {
              * Confirm
              * @default false
              */
-            confirm: boolean;
+            confirm?: boolean;
         };
         /** EffectivePriceOut */
         EffectivePriceOut: {
@@ -1872,7 +1872,7 @@ export interface components {
              * @default BRL
              * @constant
              */
-            currency: "BRL";
+            currency?: "BRL";
             /** Default Version */
             default_version: number | null;
             /** Override Version */
@@ -2643,7 +2643,7 @@ export interface components {
              * @default monthly
              * @constant
              */
-            cycle: "monthly";
+            cycle?: "monthly";
             /** Active Numbers */
             active_numbers: number;
             /** Monthly Total Micros */
@@ -2812,7 +2812,7 @@ export interface components {
              * @default meshio
              * @constant
              */
-            data_source: "meshio";
+            data_source?: "meshio";
             channels: components["schemas"]["OverviewChannelsOut"];
             messages: components["schemas"]["OverviewMessagesOut"];
             webhooks: components["schemas"]["OverviewWebhooksOut"];
@@ -3022,7 +3022,7 @@ export interface components {
              * Idempotent Replay
              * @default false
              */
-            idempotent_replay: boolean;
+            idempotent_replay?: boolean;
         };
         /** SettingsOut */
         SettingsOut: {
@@ -3348,7 +3348,7 @@ export interface components {
              * @default queued
              * @constant
              */
-            status: "queued";
+            status?: "queued";
         };
         /** TemplateVariablesIn */
         TemplateVariablesIn: {
@@ -3384,7 +3384,7 @@ export interface components {
              * @default queued
              * @constant
              */
-            status: "queued";
+            status?: "queued";
         };
         /** TextIn */
         TextIn: {
@@ -3533,7 +3533,7 @@ export interface components {
              * Number Fees During Trial
              * @default false
              */
-            number_fees_during_trial: boolean;
+            number_fees_during_trial?: boolean;
             /** Settings Version */
             settings_version: number | null;
         };
@@ -3579,7 +3579,7 @@ export interface components {
              * Estimate
              * @default true
              */
-            estimate: boolean;
+            estimate?: boolean;
             /** Sources */
             sources: {
                 [key: string]: {
@@ -3649,7 +3649,7 @@ export interface components {
              * @default BRL
              * @constant
              */
-            currency: "BRL";
+            currency?: "BRL";
             /**
              * Balance Micros
              * @description total = paid + bonus
