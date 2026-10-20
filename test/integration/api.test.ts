@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   AuthenticationError,
+  ConflictError,
   Meshio,
   MeshioError,
   NotFoundError,
@@ -167,4 +168,104 @@ describe.skipIf(!run)('integração (MESHIO_TEST_API_URL)', () => {
     await meshio.optOuts.create({ business_id: biz.id, phone });
     await meshio.optOuts.delete({ business_id: biz.id, phone });
   });
+});
+
+const simUrl = process.env.MESHIO_TEST_SIM_URL?.replace(/\/$/, '');
+
+describe.skipIf(!run || !simUrl)('integração com o Simulador (MESHIO_TEST_SIM_URL)', () => {
+  const meshio = new Meshio({ apiKey, baseUrl, maxRetries: 1 });
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const rand = (min: number, max: number) => Math.floor(min + Math.random() * (max - min));
+
+  async function postSim(path: string, body: unknown): Promise<Record<string, unknown>> {
+    const res = await fetch(`${simUrl}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    expect(res.ok).toBe(true);
+    return (await res.json()) as Record<string, unknown>;
+  }
+
+  it('conecta número, recebe mensagem, envia com idempotência e desconecta', async () => {
+    const biz = (await meshio.businesses.list({ limit: 1 })).data[0];
+    expect(biz).toBeDefined();
+    const session = await meshio.channels.signupSessions.create({
+      business_id: biz!.id,
+      mode: 'cloud_api',
+    } as never);
+    expect((await meshio.channels.signupSessions.get(session.signup_session_id)).id).toBe(
+      session.signup_session_id,
+    );
+
+    // O Simulador faz o papel da janela de cadastro da Meta.
+    const q = new URL(session.launch.url as string).searchParams;
+    const phone = `+55 11 9${rand(1000, 9999)}-${rand(1000, 9999)}`;
+    const sim = await postSim('/es/dialog/submit', {
+      app_id: q.get('app_id'),
+      config_id: q.get('config_id'),
+      state: q.get('state'),
+      feature_type: null,
+      origin: q.get('origin'),
+      scenario: 'success',
+      business_name: 'SDK node',
+      display_phone_number: phone,
+      verified_name: 'SDK node',
+    });
+    const assets = sim.assets as Record<string, string>;
+
+    let channel = await meshio.channels.signupSessions.complete(session.signup_session_id, {
+      state: session.state,
+      code: assets.code!,
+      waba_id: assets.waba_id!,
+      phone_number_id: assets.phone_number_id!,
+      event: 'FINISH',
+    } as never);
+    try {
+      expect(channel.business_id).toBe(biz!.id);
+      await meshio.channels.healthCheck(channel.id);
+      // A ativação é assíncrona (validação na Meta); aguarda até 20 s.
+      for (let i = 0; i < 40 && channel.status !== 'active'; i++) {
+        await wait(500);
+        channel = await meshio.channels.get(channel.id);
+      }
+      expect(channel.status).toBe('active');
+
+      // Mensagem do cliente abre a janela de 24 h para texto livre.
+      const contact = `+55119${rand(10000000, 99999999)}`;
+      await postSim('/_sim/inbound-message', {
+        phone_number_id: assets.phone_number_id,
+        from: contact.slice(1),
+        text: 'Oi',
+      });
+      for (let i = 0; i < 40; i++) {
+        if ((await meshio.conversations.timeline(channel.id, contact, { limit: 1 })).data.length) {
+          break;
+        }
+        await wait(500);
+      }
+
+      const body = {
+        channel_id: channel.id,
+        to: contact,
+        type: 'text' as const,
+        text: { body: 'Teste do SDK Node' },
+        client_reference: 'sdk-node',
+      };
+      const idempotencyKey = `sdk-node-${randomUUID()}`;
+      const first = await meshio.messages.send(body, { idempotencyKey });
+      expect(first.status).toBe('queued');
+      const second = await meshio.messages.send(body, { idempotencyKey });
+      expect(second.id).toBe(first.id);
+      expect(second.idempotent_replay).toBe(true);
+      const conflict = await meshio.messages
+        .send({ ...body, client_reference: 'other' }, { idempotencyKey })
+        .catch((e) => e);
+      expect(conflict).toBeInstanceOf(ConflictError);
+      expect(conflict.code).toBe('IDEMPOTENCY_CONFLICT');
+      expect((await meshio.messages.get(first.id)).id).toBe(first.id);
+    } finally {
+      await meshio.channels.disconnect(channel.id, { confirm: true } as never);
+    }
+  }, 90_000);
 });
