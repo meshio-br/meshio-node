@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   ConnectionError,
   type MeshioError,
@@ -70,15 +71,9 @@ function env(name: string): string | undefined {
   return p?.env?.[name] || undefined;
 }
 
+/** UUID v4 (usa `node:crypto`, disponível no Node 18 sem flags). */
 export function uuidv4(): string {
-  const c = globalThis.crypto as Crypto | undefined;
-  if (c?.randomUUID) return c.randomUUID();
-  const b = new Uint8Array(16);
-  c!.getRandomValues(b);
-  b[6] = (b[6]! & 0x0f) | 0x40;
-  b[8] = (b[8]! & 0x3f) | 0x80;
-  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  return randomUUID();
 }
 
 /** Backoff exponencial com jitter: 0,5 s, 1 s, 2 s… (máx. 8 s). */
