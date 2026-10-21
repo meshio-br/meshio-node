@@ -96,40 +96,156 @@ export class BillingEntries extends APIResource {
   }
 }
 
-export class NumberFees extends APIResource {
-  /** GET /v1/billing/number-fees */
-  list(
-    query: QueryOf<'billing_number_fees_list'> = {},
+export class SubscriptionSeats extends APIResource {
+  /** POST /v1/billing/subscription/seats/preview — impacto de `{add}` ou `{target}`, sem alterar nada. */
+  preview(
+    body: BodyOf<'billing_subscription_seats_preview'>,
     options?: O,
-  ): Promise<ResponseOf<'billing_number_fees_list'>> {
-    return this._call('GET', '/v1/billing/number-fees', { query, options });
+  ): Promise<ResponseOf<'billing_subscription_seats_preview'>> {
+    return this._call('POST', '/v1/billing/subscription/seats/preview', { body, options });
+  }
+  /**
+   * POST /v1/billing/subscription/seats — `{add}` (imediato, fatura proporcional), `{target}`
+   * (redução na renovação) ou `{cancel_scheduled_reduction: true}`.
+   * `Idempotency-Key` opcional (via `options.idempotencyKey`): com `{add}`, a mesma chave devolve
+   * a mesma fatura. Sem chave, a requisição não é repetida automaticamente em falhas.
+   */
+  change(
+    body: BodyOf<'billing_subscription_seats_change'>,
+    options?: O,
+  ): Promise<WithIdempotency<ResponseOf<'billing_subscription_seats_change'>>> {
+    return this._idempotent('/v1/billing/subscription/seats', body, 'optional', options);
+  }
+}
+
+export class Subscription extends APIResource {
+  readonly seats = new SubscriptionSeats(this._client);
+
+  /** GET /v1/billing/subscription — situação: status, vagas, ciclo, renovação, excedente, atraso. */
+  get(options?: O): Promise<ResponseOf<'billing_subscription_get'>> {
+    return this._call('GET', '/v1/billing/subscription', { options });
+  }
+  /** POST /v1/billing/subscription/preview — `{seats}` → faixa, preço unitário, total e franquia. */
+  preview(
+    body: BodyOf<'billing_subscription_preview'>,
+    options?: O,
+  ): Promise<ResponseOf<'billing_subscription_preview'>> {
+    return this._call('POST', '/v1/billing/subscription/preview', { body, options });
+  }
+  /**
+   * POST /v1/billing/subscription — contrata `{seats, payment_method}` e devolve a assinatura com
+   * a primeira fatura. Leva `Idempotency-Key`: se não informada, o SDK gera um UUID v4 e o
+   * reaproveita nas novas tentativas (sem cobrar de novo).
+   */
+  create(
+    body: BodyOf<'billing_subscription_create'>,
+    options?: O,
+  ): Promise<WithIdempotency<ResponseOf<'billing_subscription_create'>>> {
+    return this._idempotent('/v1/billing/subscription', body, 'required', options);
+  }
+  /** POST /v1/billing/subscription/cancel — cancela no fim do ciclo. */
+  cancel(options?: O): Promise<ResponseOf<'billing_subscription_cancel'>> {
+    return this._call('POST', '/v1/billing/subscription/cancel', { options });
+  }
+  /** POST /v1/billing/subscription/resume — desfaz o cancelamento antes do fim do ciclo. */
+  resume(options?: O): Promise<ResponseOf<'billing_subscription_resume'>> {
+    return this._call('POST', '/v1/billing/subscription/resume', { options });
+  }
+  /** PATCH /v1/billing/subscription/overage — `{enabled, limit_micros}`. */
+  updateOverage(
+    body: BodyOf<'billing_subscription_overage_update'>,
+    options?: O,
+  ): Promise<ResponseOf<'billing_subscription_overage_update'>> {
+    return this._call('PATCH', '/v1/billing/subscription/overage', { body, options });
+  }
+  /** PATCH /v1/billing/subscription/payment-method — `{payment_method, accept_wallet_terms?}`. */
+  updatePaymentMethod(
+    body: BodyOf<'billing_subscription_payment_method_update'>,
+    options?: O,
+  ): Promise<ResponseOf<'billing_subscription_payment_method_update'>> {
+    return this._call('PATCH', '/v1/billing/subscription/payment-method', { body, options });
+  }
+}
+
+export class AllowanceConsumptions extends APIResource {
+  /** GET /v1/billing/allowance/consumptions — evidências do que contou na franquia. */
+  list(
+    query: QueryOf<'billing_allowance_consumptions_list'> = {},
+    options?: O,
+  ): Promise<ResponseOf<'billing_allowance_consumptions_list'>> {
+    return this._call('GET', '/v1/billing/allowance/consumptions', { query, options });
   }
   listAll(
-    query: QueryOf<'billing_number_fees_list'> = {},
+    query: QueryOf<'billing_allowance_consumptions_list'> = {},
     options?: O,
-  ): AsyncGenerator<ItemOf<'billing_number_fees_list'>> {
+  ): AsyncGenerator<ItemOf<'billing_allowance_consumptions_list'>> {
     return this._all((q) => this.list(q, options), query);
   }
-  /** GET /v1/billing/number-fees/summary */
-  summary(options?: O): Promise<ResponseOf<'billing_number_fees_summary'>> {
-    return this._call('GET', '/v1/billing/number-fees/summary', { options });
+}
+
+export class Allowance extends APIResource {
+  readonly consumptions = new AllowanceConsumptions(this._client);
+
+  /** GET /v1/billing/allowance — franquia do ciclo atual (incluídas, usadas, restantes, %). */
+  get(options?: O): Promise<ResponseOf<'billing_allowance_get'>> {
+    return this._call('GET', '/v1/billing/allowance', { options });
   }
 }
 
-export class BillingSettings extends APIResource {
-  /** GET /v1/billing/settings/public */
-  get(options?: O): Promise<ResponseOf<'billing_settings_get'>> {
-    return this._call('GET', '/v1/billing/settings/public', { options });
-  }
-  /** PATCH /v1/billing/settings */
-  update(
-    body: BodyOf<'billing_settings_update'>,
+export class Cycles extends APIResource {
+  /** GET /v1/billing/cycles */
+  list(
+    query: QueryOf<'billing_cycles_list'> = {},
     options?: O,
-  ): Promise<ResponseOf<'billing_settings_update'>> {
-    return this._call('PATCH', '/v1/billing/settings', { body, options });
+  ): Promise<ResponseOf<'billing_cycles_list'>> {
+    return this._call('GET', '/v1/billing/cycles', { query, options });
+  }
+  listAll(
+    query: QueryOf<'billing_cycles_list'> = {},
+    options?: O,
+  ): AsyncGenerator<ItemOf<'billing_cycles_list'>> {
+    return this._all((q) => this.list(q, options), query);
   }
 }
 
+export class Invoices extends APIResource {
+  /** GET /v1/billing/invoices */
+  list(
+    query: QueryOf<'billing_invoices_list'> = {},
+    options?: O,
+  ): Promise<ResponseOf<'billing_invoices_list'>> {
+    return this._call('GET', '/v1/billing/invoices', { query, options });
+  }
+  listAll(
+    query: QueryOf<'billing_invoices_list'> = {},
+    options?: O,
+  ): AsyncGenerator<ItemOf<'billing_invoices_list'>> {
+    return this._all((q) => this.list(q, options), query);
+  }
+  /** GET /v1/billing/invoices/{invoice_id} */
+  get(invoiceId: string, options?: O): Promise<ResponseOf<'billing_invoices_get'>> {
+    return this._call('GET', `/v1/billing/invoices/${seg(invoiceId)}`, { options });
+  }
+  /**
+   * POST /v1/billing/invoices/{invoice_id}/pay — `{method: "link"}` (novo link de pagamento) ou
+   * `{method: "wallet"}` (saldo anterior). Leva `Idempotency-Key`: se não informada, o SDK gera um
+   * UUID v4 e o reaproveita nas novas tentativas.
+   */
+  pay(
+    invoiceId: string,
+    body: BodyOf<'billing_invoices_pay'> = {},
+    options?: O,
+  ): Promise<WithIdempotency<ResponseOf<'billing_invoices_pay'>>> {
+    return this._idempotent(
+      `/v1/billing/invoices/${seg(invoiceId)}/pay`,
+      body,
+      'required',
+      options,
+    );
+  }
+}
+
+/** Recargas do modelo antigo: só histórico (não há novas recargas). */
 export class Topups extends APIResource {
   /** GET /v1/billing/topups */
   list(query: QueryOf<'topups_list'> = {}, options?: O): Promise<ResponseOf<'topups_list'>> {
@@ -138,60 +254,27 @@ export class Topups extends APIResource {
   listAll(query: QueryOf<'topups_list'> = {}, options?: O): AsyncGenerator<ItemOf<'topups_list'>> {
     return this._all((q) => this.list(q, options), query);
   }
-  /**
-   * POST /v1/billing/topups — `Idempotency-Key` opcional (via `options.idempotencyKey`).
-   * Sem chave, a requisição não é repetida automaticamente em falhas.
-   */
-  create(
-    body: BodyOf<'topups_create'>,
-    options?: O,
-  ): Promise<WithIdempotency<ResponseOf<'topups_create'>>> {
-    return this._idempotent('/v1/billing/topups', body, 'optional', options);
-  }
   /** GET /v1/billing/topups/{topup_id} */
   get(topupId: string, options?: O): Promise<ResponseOf<'topups_get'>> {
     return this._call('GET', `/v1/billing/topups/${seg(topupId)}`, { options });
   }
-  /** POST /v1/billing/topups/{topup_id}/refund-request */
-  requestRefund(
-    topupId: string,
-    body: BodyOf<'topups_request_refund'>,
-    options?: O,
-  ): Promise<ResponseOf<'topups_request_refund'>> {
-    return this._call('POST', `/v1/billing/topups/${seg(topupId)}/refund-request`, {
-      body,
-      options,
-    });
-  }
 }
 
+/** Cobrança por assinatura de números: assinatura, franquia, ciclos, faturas e histórico. */
 export class Billing extends APIResource {
+  readonly subscription = new Subscription(this._client);
+  readonly allowance = new Allowance(this._client);
+  readonly cycles = new Cycles(this._client);
+  readonly invoices = new Invoices(this._client);
   readonly entries = new BillingEntries(this._client);
-  readonly numberFees = new NumberFees(this._client);
-  readonly settings = new BillingSettings(this._client);
   readonly topups = new Topups(this._client);
 
-  /** GET /v1/billing/wallet */
-  wallet(options?: O): Promise<ResponseOf<'billing_wallet'>> {
-    return this._call('GET', '/v1/billing/wallet', { options });
-  }
-  /** GET /v1/billing/pricing */
+  /** GET /v1/billing/pricing — condições vigentes para você. */
   pricing(options?: O): Promise<ResponseOf<'billing_pricing'>> {
     return this._call('GET', '/v1/billing/pricing', { options });
   }
-  /** GET /v1/billing/consumption */
-  consumption(
-    query: QueryOf<'billing_consumption'> = {},
-    options?: O,
-  ): Promise<ResponseOf<'billing_consumption'>> {
-    return this._call('GET', '/v1/billing/consumption', { query, options });
-  }
-  /** GET /v1/billing/trial */
-  trial(options?: O): Promise<ResponseOf<'billing_trial'>> {
-    return this._call('GET', '/v1/billing/trial', { options });
-  }
-  /** GET /v1/billing/bonus-offers */
-  bonusOffers(options?: O): Promise<ResponseOf<'billing_bonus_offers'>> {
-    return this._call('GET', '/v1/billing/bonus-offers', { options });
+  /** GET /v1/billing/wallet — saldo anterior preservado e consentimento de pagamento com saldo. */
+  wallet(options?: O): Promise<ResponseOf<'billing_wallet'>> {
+    return this._call('GET', '/v1/billing/wallet', { options });
   }
 }

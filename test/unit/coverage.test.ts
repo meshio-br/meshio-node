@@ -58,21 +58,29 @@ const calls: Record<string, (m: Meshio) => Promise<unknown>> = {
   opt_outs_list: (m) => m.optOuts.list(),
   opt_outs_create: (m) => m.optOuts.create({} as never),
   opt_outs_delete: (m) => m.optOuts.delete({ business_id: 'b', phone: 'p' }),
-  billing_wallet: (m) => m.billing.wallet(),
+  billing_subscription_get: (m) => m.billing.subscription.get(),
+  billing_subscription_preview: (m) => m.billing.subscription.preview({ seats: 3 }),
+  billing_subscription_create: (m) => m.billing.subscription.create({ seats: 3 }),
+  billing_subscription_seats_preview: (m) => m.billing.subscription.seats.preview({ add: 1 }),
+  billing_subscription_seats_change: (m) => m.billing.subscription.seats.change({ add: 1 }),
+  billing_subscription_cancel: (m) => m.billing.subscription.cancel(),
+  billing_subscription_resume: (m) => m.billing.subscription.resume(),
+  billing_subscription_overage_update: (m) =>
+    m.billing.subscription.updateOverage({ enabled: false }),
+  billing_subscription_payment_method_update: (m) =>
+    m.billing.subscription.updatePaymentMethod({ payment_method: 'invoice_link' }),
+  billing_allowance_get: (m) => m.billing.allowance.get(),
+  billing_allowance_consumptions_list: (m) => m.billing.allowance.consumptions.list(),
+  billing_cycles_list: (m) => m.billing.cycles.list(),
+  billing_invoices_list: (m) => m.billing.invoices.list(),
+  billing_invoices_get: (m) => m.billing.invoices.get('invoice_id'),
+  billing_invoices_pay: (m) => m.billing.invoices.pay('invoice_id'),
   billing_pricing: (m) => m.billing.pricing(),
+  billing_wallet: (m) => m.billing.wallet(),
   billing_entries_list: (m) => m.billing.entries.list(),
   billing_entries_export_csv: (m) => m.billing.entries.exportCsv(),
-  billing_consumption: (m) => m.billing.consumption(),
-  billing_number_fees_list: (m) => m.billing.numberFees.list(),
-  billing_number_fees_summary: (m) => m.billing.numberFees.summary(),
-  billing_trial: (m) => m.billing.trial(),
-  billing_settings_get: (m) => m.billing.settings.get(),
-  billing_settings_update: (m) => m.billing.settings.update({ low_balance_threshold_micros: '0' }),
-  billing_bonus_offers: (m) => m.billing.bonusOffers(),
   topups_list: (m) => m.billing.topups.list(),
-  topups_create: (m) => m.billing.topups.create({} as never),
   topups_get: (m) => m.billing.topups.get('topup_id'),
-  topups_request_refund: (m) => m.billing.topups.requestRefund('topup_id', { reason: 'x' }),
 };
 
 const spec = JSON.parse(
@@ -94,8 +102,8 @@ for (const [path, item] of Object.entries(spec.paths)) {
 }
 
 describe('cobertura do contrato', () => {
-  it('contrato tem 67 operações e todas estão mapeadas', () => {
-    expect(ops).toHaveLength(67);
+  it('contrato tem 73 operações e todas estão mapeadas', () => {
+    expect(ops).toHaveLength(73);
     expect(Object.keys(calls).sort()).toEqual(ops.map((o) => o.id).sort());
   });
 
