@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AuthenticationError,
   ConflictError,
+  GoneError,
   Meshio,
   MeshioError,
   NotFoundError,
@@ -98,8 +99,10 @@ describe.skipIf(!run)('integração (MESHIO_TEST_API_URL)', () => {
       meshio.consents.list({ limit: 2 }),
       meshio.optOuts.list({ limit: 2 }),
       meshio.billing.entries.list({ limit: 2 }),
-      meshio.billing.numberFees.list({ limit: 2 }),
       meshio.billing.topups.list({ limit: 2 }),
+      meshio.billing.invoices.list({ limit: 2 }),
+      meshio.billing.cycles.list({ limit: 2 }),
+      meshio.billing.allowance.consumptions.list({ limit: 2 }),
     ]) {
       expect(Array.isArray((await p).data)).toBe(true);
     }
@@ -107,22 +110,70 @@ describe.skipIf(!run)('integração (MESHIO_TEST_API_URL)', () => {
     if (ev) expect((await meshio.events.get(ev.id)).id).toBe(ev.id);
   });
 
-  it('uso, conformidade e cobrança', async () => {
+  it('uso e conformidade', async () => {
     await meshio.usage.get();
     expect(typeof (await meshio.usage.exportCsv())).toBe('string');
     await meshio.usage.overview();
-    await meshio.usage.integrationStatus();
+    const status = await meshio.usage.integrationStatus();
+    expect(typeof status.billing.subscription_status).toBe('string');
     await meshio.compliance.status();
-    const wallet = await meshio.billing.wallet();
-    expect(typeof wallet.balance_micros).toBe('string');
-    expect(microsToReais(wallet.balance_micros)).toMatch(/^-?\d+(\.\d+)?$/);
+  });
+
+  it('assinatura: situação, prévia de contratação e de vagas', async () => {
+    const sub = await meshio.billing.subscription.get();
+    expect(sub.status).toBe('active');
+    expect(sub.seats).toBeGreaterThanOrEqual(1);
+    expect(typeof sub.monthly_total_micros).toBe('string');
+    expect(sub.current_cycle?.id).toMatch(/^cyc_/);
+
+    const preview = await meshio.billing.subscription.preview({ seats: 3 });
+    expect(preview.seats).toBe(3);
+    expect(typeof preview.unit_price_micros).toBe('string');
+    expect(BigInt(preview.monthly_total_micros)).toBe(BigInt(preview.unit_price_micros) * 3n);
+    expect(microsToReais(preview.monthly_total_micros, 2)).toMatch(/^\d+\.\d{2}$/);
+
+    const seats = await meshio.billing.subscription.seats.preview({ add: 1 });
+    expect(seats).toBeTypeOf('object');
+  });
+
+  it('franquia, ciclos e consumos', async () => {
+    const allowance = await meshio.billing.allowance.get();
+    expect(allowance.cycle_id).toMatch(/^cyc_/);
+    expect(allowance.remaining_messages).toBe(
+      Math.max(0, allowance.included_messages - allowance.used_messages - allowance.held_messages),
+    );
+    const cycles = await meshio.billing.cycles.list({ limit: 5 });
+    expect(cycles.data.map((c) => c.id)).toContain(allowance.cycle_id);
+    const consumptions = await meshio.billing.allowance.consumptions.list({
+      cycle_id: allowance.cycle_id,
+      limit: 2,
+    });
+    expect(Array.isArray(consumptions.data)).toBe(true);
+  });
+
+  it('faturas, preços, saldo anterior e extrato', async () => {
+    const invoices = await meshio.billing.invoices.list({ limit: 5 });
+    const inv = invoices.data[0];
+    if (inv) expect((await meshio.billing.invoices.get(inv.id)).id).toBe(inv.id);
     await meshio.billing.pricing();
+    const wallet = await meshio.billing.wallet();
+    expect(typeof wallet.paid_balance_micros).toBe('string');
+    expect(microsToReais(wallet.paid_balance_micros)).toMatch(/^-?\d+(\.\d+)?$/);
     expect(typeof (await meshio.billing.entries.exportCsv())).toBe('string');
-    await meshio.billing.consumption();
-    await meshio.billing.numberFees.summary();
-    await meshio.billing.trial();
-    await meshio.billing.settings.get();
-    await meshio.billing.bonusOffers();
+  });
+
+  it('rota descontinuada responde 410 DISCONTINUED com GoneError', async () => {
+    const err = await meshio.http
+      .request({ method: 'GET', path: '/v1/billing/trial' })
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(GoneError);
+    expect(err.code).toBe('DISCONTINUED');
+    expect(err.replacement).toBe('/v1/billing/subscription');
+    expect(err.messagePt).toBeTruthy();
+    const post = await meshio.http
+      .request({ method: 'POST', path: '/v1/billing/topups', body: { amount_micros: '1000000' } })
+      .catch((e) => e);
+    expect(post).toBeInstanceOf(GoneError);
   });
 
   it('webhook endpoints: ciclo completo com URL única', async () => {
@@ -190,6 +241,21 @@ describe.skipIf(!run || !simUrl)('integração com o Simulador (MESHIO_TEST_SIM_
   it('conecta número, recebe mensagem, envia com idempotência e desconecta', async () => {
     const biz = (await meshio.businesses.list({ limit: 1 })).data[0];
     expect(biz).toBeDefined();
+
+    // Sem vaga livre, conectar responde 409 NUMBER_LIMIT_REACHED (vaga não é número).
+    const sub = await meshio.billing.subscription.get();
+    const limit = sub.number_limit?.limit;
+    if (typeof limit === 'number' && sub.connected_numbers >= limit) {
+      const err = await meshio.channels.signupSessions
+        .create({ business_id: biz!.id, mode: 'cloud_api' } as never)
+        .catch((e) => e);
+      expect(err).toBeInstanceOf(ConflictError);
+      expect(err.code).toBe('NUMBER_LIMIT_REACHED');
+      expect(['seats', 'trial', 'no_active_plan']).toContain(err.reason);
+      expect(err.messagePt).toBeTruthy();
+      return;
+    }
+
     const session = await meshio.channels.signupSessions.create({
       business_id: biz!.id,
       mode: 'cloud_api',
