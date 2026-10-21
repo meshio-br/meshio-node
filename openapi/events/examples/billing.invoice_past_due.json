@@ -1,0 +1,15 @@
+{
+  "event_id": "evt_01J8Z3Q7K2M4N6P8R0S2T4VB06",
+  "occurred_at": "2026-10-20T15:30:00Z",
+  "business_id": null,
+  "channel_id": null,
+  "event_type": "billing.invoice_past_due",
+  "data": {
+    "invoice_id": "inv_01J8Z3Q7K2M4N6P8R0S2T4VI01",
+    "subscription_id": "sub_01J8Z3Q7K2M4N6P8R0S2T4VS01",
+    "kind": "subscription",
+    "total_micros": "149700000",
+    "due_at": "2026-11-05T14:00:00Z",
+    "grace_until": "2026-11-08T14:00:00Z"
+  }
+}

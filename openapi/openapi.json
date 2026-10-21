@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Meshio API",
-    "description": "Contrato público da API Meshio usado pelos SDKs oficiais. Autenticação: Authorization: Bearer msk_…",
-    "version": "v1"
+    "description": "Contrato público da API Meshio, usado pelos SDKs oficiais. Autenticação: Authorization: Bearer msk_…",
+    "version": "0.1.0"
   },
   "tags": [
     {
@@ -1265,7 +1265,7 @@
           {
             "name": "Idempotency-Key",
             "in": "header",
-            "required": false,
+            "required": true,
             "schema": {
               "anyOf": [
                 {
@@ -1304,7 +1304,7 @@
             "description": "IDEMPOTENCY_KEY_REQUIRED"
           },
           "402": {
-            "description": "INSUFFICIENT_BALANCE (details: required_micros, available_micros, required, available, currency) — prepaid BRL balance; CHANNEL_BILLING_SUSPENDED (details: channel_id, amount_due_micros, available_micros) — monthly number fee overdue; BUSINESS_ALLOWANCE_REACHED (details: business_id, allowance_micros, used_micros, resets_at) — the business reached its monthly allowance"
+            "description": "SUBSCRIPTION_REQUIRED (details: reason trial_ended | no_plan | subscription_canceled | subscription_incomplete | trial_available), SUBSCRIPTION_PAST_DUE or ALLOWANCE_EXHAUSTED (details: reason, cycle_id, included_messages, used_messages, held_messages, cycle_ends_at, overage_limit_micros, overage_used_micros); all with message_pt and path /billing"
           },
           "403": {
             "description": "FORBIDDEN"
@@ -3217,7 +3217,7 @@
         "tags": [
           "status"
         ],
-        "summary": "Health of the integration: numbers, messages, webhooks, templates and balance",
+        "summary": "Health of the integration: numbers, messages, webhooks, templates and subscription",
         "operationId": "status_integration",
         "responses": {
           "200": {
@@ -3664,12 +3664,973 @@
         "x-meshio-scope": "messages:write"
       }
     },
+    "/v1/billing/subscription": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Subscription, cycle and payment status",
+        "operationId": "billing_subscription_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:read"
+      },
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Subscribe (incomplete until the first invoice is paid; the paid cycle starts at payment)",
+        "operationId": "billing_subscription_create",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional. Same key + same body → the same response (header `Idempotent-Replayed: true`); a different body → 409 IDEMPOTENCY_CONFLICT. 1–255 visible ASCII characters.",
+              "title": "Idempotency-Key"
+            },
+            "description": "Optional. Same key + same body → the same response (header `Idempotent-Replayed: true`); a different body → 409 IDEMPOTENCY_CONFLICT. 1–255 visible ASCII characters."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubscriptionIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionChangeResultOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED or PAYMENT_METHOD_UNAVAILABLE"
+          },
+          "409": {
+            "description": "CONFLICT (subscription_exists, subscription_not_active, reduction_scheduled, …) or IDEMPOTENCY_CONFLICT"
+          },
+          "503": {
+            "description": "BILLING_NOT_CONFIGURED (no published plan version) or FEATURE_DISABLED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:write"
+      }
+    },
+    "/v1/billing/subscription/preview": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Preview a subscription: tier, unit price, monthly total and included messages",
+        "operationId": "billing_subscription_preview",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionPreviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionPreviewOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED"
+          },
+          "503": {
+            "description": "BILLING_NOT_CONFIGURED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:read"
+      }
+    },
+    "/v1/billing/subscription/seats/preview": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Preview adding seats (prorated) or a reduction at the next renewal",
+        "operationId": "billing_subscription_seats_preview",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeatsPreviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeatsPreviewOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:read"
+      }
+    },
+    "/v1/billing/subscription/seats": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Add seats now (prorated invoice), schedule a reduction, or cancel the scheduled reduction",
+        "operationId": "billing_subscription_seats_change",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeatsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeatsChangeOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED or PAYMENT_METHOD_UNAVAILABLE"
+          },
+          "409": {
+            "description": "CONFLICT (subscription_exists, subscription_not_active, reduction_scheduled, …) or IDEMPOTENCY_CONFLICT"
+          },
+          "503": {
+            "description": "BILLING_NOT_CONFIGURED (no published plan version) or FEATURE_DISABLED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:write"
+      }
+    },
+    "/v1/billing/subscription/cancel": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Cancel at the end of the paid cycle (an unpaid subscription is canceled now)",
+        "operationId": "billing_subscription_cancel",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED or PAYMENT_METHOD_UNAVAILABLE"
+          },
+          "409": {
+            "description": "CONFLICT (subscription_exists, subscription_not_active, reduction_scheduled, …) or IDEMPOTENCY_CONFLICT"
+          },
+          "503": {
+            "description": "BILLING_NOT_CONFIGURED (no published plan version) or FEATURE_DISABLED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:write"
+      }
+    },
+    "/v1/billing/subscription/resume": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Undo a scheduled cancellation",
+        "operationId": "billing_subscription_resume",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:write"
+      }
+    },
+    "/v1/billing/subscription/overage": {
+      "patch": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Authorize (or stop) overage with a limit in BRL per cycle",
+        "operationId": "billing_subscription_overage_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED"
+          },
+          "409": {
+            "description": "OVERAGE_UNAVAILABLE (price_undefined | trial | feature_disabled)"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:write"
+      }
+    },
+    "/v1/billing/subscription/payment-method": {
+      "patch": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Payment method: invoice link (Pix/card) or preserved paid balance (explicit opt-in)",
+        "operationId": "billing_subscription_payment_method_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentMethodIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "PAYMENT_METHOD_UNAVAILABLE (card auto-renewal, Pix Automático, terms)"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:write"
+      }
+    },
+    "/v1/billing/allowance": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Message allowance of the current cycle (shared by all numbers)",
+        "operationId": "billing_allowance_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllowanceOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND (channel_id or cycle_id filter of another integrator)"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:read"
+      }
+    },
+    "/v1/billing/allowance/consumptions": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Counted messages with evidence (paginated, newest first)",
+        "operationId": "billing_allowance_consumptions_list",
+        "parameters": [
+          {
+            "name": "cycle_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cycle Id"
+            }
+          },
+          {
+            "name": "channel_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channel Id"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(outbound|inbound)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Direction"
+            }
+          },
+          {
+            "name": "classification",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(included|overage|excess_unbilled|no_cycle)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Classification"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumptionPage"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND (channel_id or cycle_id filter of another integrator)"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:read"
+      }
+    },
+    "/v1/billing/cycles": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Billing cycles (history)",
+        "operationId": "billing_cycles_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 200,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CyclePage"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:read"
+      }
+    },
+    "/v1/billing/invoices": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Invoices of the subscription",
+        "operationId": "billing_invoices_list",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(open|paid|void|uncollectible)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(subscription|seat_addition|overage)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 200,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoicePage"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:read"
+      }
+    },
+    "/v1/billing/invoices/{invoice_id}": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Invoice with lines",
+        "operationId": "billing_invoices_get",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:read"
+      }
+    },
+    "/v1/billing/invoices/{invoice_id}/pay": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Pay: current or new payment link (Pix/card), or the preserved paid balance",
+        "operationId": "billing_invoices_pay",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invoice Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional. Same key + same body → the same response (header `Idempotent-Replayed: true`); a different body → 409 IDEMPOTENCY_CONFLICT. 1–255 visible ASCII characters.",
+              "title": "Idempotency-Key"
+            },
+            "description": "Optional. Same key + same body → the same response (header `Idempotent-Replayed: true`); a different body → 409 IDEMPOTENCY_CONFLICT. 1–255 visible ASCII characters."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayInvoiceIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "PAYMENT_METHOD_UNAVAILABLE (wallet_terms_not_accepted, insufficient_paid_balance)"
+          },
+          "409": {
+            "description": "CONFLICT (invoice not open) or IDEMPOTENCY_CONFLICT"
+          },
+          "502": {
+            "description": "PAYMENT_PROVIDER_UNAVAILABLE (attempt recorded; try again)"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:write"
+      }
+    },
+    "/v1/billing/pricing": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Conditions in effect for the integrator",
+        "operationId": "billing_pricing",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          },
+          "422": {
+            "description": "VALIDATION_FAILED"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-meshio-scope": "billing:read"
+      }
+    },
     "/v1/billing/wallet": {
       "get": {
         "tags": [
           "billing"
         ],
-        "summary": "Prepaid BRL wallet of the active integrator",
+        "summary": "Preserved balance (paid and promotional) and opt-in",
         "operationId": "billing_wallet",
         "responses": {
           "200": {
@@ -3700,48 +4661,12 @@
         "x-meshio-scope": "billing:read"
       }
     },
-    "/v1/billing/pricing": {
-      "get": {
-        "tags": [
-          "billing"
-        ],
-        "summary": "Effective prices of the integrator (read-only)",
-        "operationId": "billing_pricing",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EffectivePricingOut"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
-          },
-          "404": {
-            "description": "NOT_FOUND"
-          },
-          "422": {
-            "description": "VALIDATION_FAILED"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-meshio-scope": "billing:read"
-      }
-    },
     "/v1/billing/entries": {
       "get": {
         "tags": [
           "billing"
         ],
-        "summary": "Statement (ledger) in BRL",
+        "summary": "Statement of the preserved balance (BRL)",
         "operationId": "billing_entries_list",
         "parameters": [
           {
@@ -3752,7 +4677,7 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "pattern": "^((topup|topup_refund|topup_chargeback|bonus|bonus_revoked|bonus_expired|outbound_message|inbound_message|number_fee|adjustment|opening_balance|chargeback_reversal|closure_refund),?)+$"
+                  "pattern": "^((topup|topup_refund|topup_chargeback|bonus|bonus_revoked|bonus_expired|outbound_message|inbound_message|number_fee|adjustment|opening_balance|chargeback_reversal|closure_refund|invoice_payment),?)+$"
                 },
                 {
                   "type": "null"
@@ -3912,7 +4837,7 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "pattern": "^((topup|topup_refund|topup_chargeback|bonus|bonus_revoked|bonus_expired|outbound_message|inbound_message|number_fee|adjustment|opening_balance|chargeback_reversal|closure_refund),?)+$"
+                  "pattern": "^((topup|topup_refund|topup_chargeback|bonus|bonus_revoked|bonus_expired|outbound_message|inbound_message|number_fee|adjustment|opening_balance|chargeback_reversal|closure_refund|invoice_payment),?)+$"
                 },
                 {
                   "type": "null"
@@ -4017,399 +4942,12 @@
         "x-meshio-scope": "billing:read"
       }
     },
-    "/v1/billing/consumption": {
-      "get": {
-        "tags": [
-          "billing"
-        ],
-        "summary": "Consumption aggregated (BRL)",
-        "operationId": "billing_consumption",
-        "parameters": [
-          {
-            "name": "from",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "YYYY-MM-DD (UTC, inclusive)",
-              "title": "From"
-            },
-            "description": "YYYY-MM-DD (UTC, inclusive)"
-          },
-          {
-            "name": "to",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "YYYY-MM-DD (UTC, inclusive)",
-              "title": "To"
-            },
-            "description": "YYYY-MM-DD (UTC, inclusive)"
-          },
-          {
-            "name": "group_by",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "pattern": "^(business|channel|kind|day)$"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Group By"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumptionOut"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
-          },
-          "404": {
-            "description": "NOT_FOUND"
-          },
-          "422": {
-            "description": "VALIDATION_FAILED"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-meshio-scope": "billing:read"
-      }
-    },
-    "/v1/billing/number-fees": {
-      "get": {
-        "tags": [
-          "billing"
-        ],
-        "summary": "Monthly number fee charges (cycles)",
-        "operationId": "billing_number_fees_list",
-        "parameters": [
-          {
-            "name": "channel_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Channel Id"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "pattern": "^(charged|past_due|exempt|waived)$"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "maximum": 200,
-                  "minimum": 1
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cursor"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChannelFeePage"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
-          },
-          "404": {
-            "description": "NOT_FOUND"
-          },
-          "422": {
-            "description": "VALIDATION_FAILED"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-meshio-scope": "billing:read"
-      }
-    },
-    "/v1/billing/number-fees/summary": {
-      "get": {
-        "tags": [
-          "billing"
-        ],
-        "summary": "Monthly fees of the numbers",
-        "operationId": "billing_number_fees_summary",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NumberFeeSummaryOut"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
-          },
-          "404": {
-            "description": "NOT_FOUND"
-          },
-          "422": {
-            "description": "VALIDATION_FAILED"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-meshio-scope": "billing:read"
-      }
-    },
-    "/v1/billing/trial": {
-      "get": {
-        "tags": [
-          "billing"
-        ],
-        "summary": "Trial period of the integrator",
-        "operationId": "billing_trial",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TrialOut"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
-          },
-          "404": {
-            "description": "NOT_FOUND"
-          },
-          "422": {
-            "description": "VALIDATION_FAILED"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-meshio-scope": "billing:read"
-      }
-    },
-    "/v1/billing/settings/public": {
-      "get": {
-        "tags": [
-          "billing"
-        ],
-        "summary": "Current commercial parameters (minimum top-up, trial offer)",
-        "operationId": "billing_settings_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SettingsOut"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
-          },
-          "404": {
-            "description": "NOT_FOUND"
-          },
-          "422": {
-            "description": "VALIDATION_FAILED"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-meshio-scope": "billing:read"
-      }
-    },
-    "/v1/billing/settings": {
-      "patch": {
-        "tags": [
-          "billing"
-        ],
-        "summary": "Update the low-balance alert (admin)",
-        "operationId": "billing_settings_update",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BillingSettingsIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletOut"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
-          },
-          "404": {
-            "description": "NOT_FOUND"
-          },
-          "422": {
-            "description": "VALIDATION_FAILED"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-meshio-scope": "billing:write"
-      }
-    },
-    "/v1/billing/bonus-offers": {
-      "get": {
-        "tags": [
-          "billing"
-        ],
-        "summary": "Top-up bonus campaigns available now",
-        "operationId": "billing_bonus_offers",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BonusOfferListOut"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
-          },
-          "404": {
-            "description": "NOT_FOUND"
-          },
-          "422": {
-            "description": "VALIDATION_FAILED"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-meshio-scope": "billing:read"
-      }
-    },
     "/v1/billing/topups": {
       "get": {
         "tags": [
           "billing"
         ],
-        "summary": "Top-ups of the integrator",
+        "summary": "Top-ups of the previous model (history)",
         "operationId": "topups_list",
         "parameters": [
           {
@@ -4492,69 +5030,6 @@
           }
         ],
         "x-meshio-scope": "billing:read"
-      },
-      "post": {
-        "tags": [
-          "billing"
-        ],
-        "summary": "Add balance (creates a checkout; balance is credited only after confirmed payment)",
-        "operationId": "topups_create",
-        "parameters": [
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 200
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Idempotency-Key"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TopupIn"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TopupOut"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
-          },
-          "404": {
-            "description": "NOT_FOUND"
-          },
-          "422": {
-            "description": "VALIDATION_FAILED"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-meshio-scope": "billing:write"
       }
     },
     "/v1/billing/topups/{topup_id}": {
@@ -4562,7 +5037,7 @@
         "tags": [
           "billing"
         ],
-        "summary": "Top-up",
+        "summary": "Top-up of the previous model",
         "operationId": "topups_get",
         "parameters": [
           {
@@ -4603,70 +5078,187 @@
         ],
         "x-meshio-scope": "billing:read"
       }
-    },
-    "/v1/billing/topups/{topup_id}/refund-request": {
-      "post": {
-        "tags": [
-          "billing"
-        ],
-        "summary": "Request a refund of a top-up (admin; within the refund window; executed by Meshio)",
-        "operationId": "topups_request_refund",
-        "parameters": [
-          {
-            "name": "topup_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Topup Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RefundRequestIn"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RefundRequestOut"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (missing billing permission, API key restricted to businesses)"
-          },
-          "404": {
-            "description": "NOT_FOUND"
-          },
-          "422": {
-            "description": "VALIDATION_FAILED"
-          },
-          "409": {
-            "description": "CONFLICT (refund_window_expired, nothing_to_refund, already requested)"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "x-meshio-scope": "billing:write"
-      }
     }
   },
   "components": {
     "schemas": {
+      "AllowanceOut": {
+        "properties": {
+          "cycle_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Id",
+            "description": "null when there is no open cycle (see access_reason)"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "trial",
+                  "paid"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "access_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "trial_ended",
+                  "no_plan",
+                  "subscription_canceled",
+                  "subscription_incomplete",
+                  "trial_available"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Access Reason",
+            "description": "why there is no open cycle; null otherwise"
+          },
+          "included_messages": {
+            "type": "integer",
+            "title": "Included Messages"
+          },
+          "used_messages": {
+            "type": "integer",
+            "title": "Used Messages",
+            "description": "messages counted in the cycle (delivered sends + new received)"
+          },
+          "held_messages": {
+            "type": "integer",
+            "title": "Held Messages",
+            "description": "accepted sends waiting for delivery (reserved)"
+          },
+          "remaining_messages": {
+            "type": "integer",
+            "title": "Remaining Messages",
+            "description": "included - used - held, never below 0"
+          },
+          "percent": {
+            "type": "integer",
+            "title": "Percent",
+            "description": "used / included, integer percent (may exceed 100)"
+          },
+          "outbound_messages": {
+            "type": "integer",
+            "title": "Outbound Messages"
+          },
+          "inbound_messages": {
+            "type": "integer",
+            "title": "Inbound Messages"
+          },
+          "overage_messages": {
+            "type": "integer",
+            "title": "Overage Messages"
+          },
+          "overage_micros": {
+            "type": "string",
+            "title": "Overage Micros"
+          },
+          "overage_price_micros": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overage Price Micros",
+            "description": "snapshot of the cycle; null = overage unavailable"
+          },
+          "overage_enabled": {
+            "type": "boolean",
+            "title": "Overage Enabled"
+          },
+          "overage_limit_micros": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overage Limit Micros"
+          },
+          "excess_unbilled_messages": {
+            "type": "integer",
+            "title": "Excess Unbilled Messages",
+            "description": "received above the allowance without overage (no charge)"
+          },
+          "by_number": {
+            "items": {
+              "$ref": "#/components/schemas/NumberUsageOut"
+            },
+            "type": "array",
+            "title": "By Number"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cycle_id",
+          "kind",
+          "period_start",
+          "period_end",
+          "access_reason",
+          "included_messages",
+          "used_messages",
+          "held_messages",
+          "remaining_messages",
+          "percent",
+          "outbound_messages",
+          "inbound_messages",
+          "overage_messages",
+          "overage_micros",
+          "overage_price_micros",
+          "overage_enabled",
+          "overage_limit_micros",
+          "excess_unbilled_messages",
+          "by_number"
+        ],
+        "title": "AllowanceOut",
+        "description": "Franquia do ciclo atual (compartilhada entre todos os números do integrador)."
+      },
       "ApprovalSummaryOut": {
         "properties": {
           "status": {
@@ -4744,93 +5336,42 @@
         ],
         "title": "AttentionOut"
       },
-      "BalanceStatusOut": {
+      "BillingStatusOut": {
         "properties": {
-          "feature_enabled": {
-            "type": "boolean",
-            "title": "Feature Enabled"
-          },
-          "available_micros": {
+          "subscription_status": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "none",
+                  "trial",
+                  "trial_ended",
+                  "incomplete",
+                  "active",
+                  "past_due",
+                  "canceled"
+                ]
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Available Micros",
-            "description": "available BRL balance in micros (R$ 1 = 1000000)"
+            "title": "Subscription Status",
+            "description": "none = never had a plan (trial still available); trial = free trial open; trial_ended = trial over without a subscription; incomplete = awaiting the first payment; null = the caller cannot read billing"
           },
-          "numbers_in_grace": {
-            "type": "integer",
-            "title": "Numbers In Grace"
+          "allowance_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowance Percent",
+            "description": "floor(counted / included * 100) of the open cycle; null without an open cycle"
           },
-          "numbers_suspended": {
-            "type": "integer",
-            "title": "Numbers Suspended"
-          }
-        },
-        "type": "object",
-        "required": [
-          "feature_enabled",
-          "available_micros",
-          "numbers_in_grace",
-          "numbers_suspended"
-        ],
-        "title": "BalanceStatusOut"
-      },
-      "BillingSettingsIn": {
-        "properties": {
-          "low_balance_threshold_micros": {
-            "type": "string",
-            "pattern": "^\\d{1,16}$",
-            "title": "Low Balance Threshold Micros",
-            "description": "integer string in micros (millionths of BRL): R$ 1 = 1000000, R$ 0.01 = 10000"
-          }
-        },
-        "type": "object",
-        "required": [
-          "low_balance_threshold_micros"
-        ],
-        "title": "BillingSettingsIn"
-      },
-      "BonusOfferListOut": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/BonusOfferOut"
-            },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "BonusOfferListOut"
-      },
-      "BonusOfferOut": {
-        "properties": {
-          "campaign_id": {
-            "type": "string",
-            "title": "Campaign Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "display_text": {
-            "type": "string",
-            "title": "Display Text"
-          },
-          "starts_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Starts At"
-          },
-          "ends_at": {
+          "cycle_ends_at": {
             "anyOf": [
               {
                 "type": "string",
@@ -4840,169 +5381,39 @@
                 "type": "null"
               }
             ],
-            "title": "Ends At"
+            "title": "Cycle Ends At",
+            "description": "End of the open cycle (renewal or trial end)"
           },
-          "min_topup_micros": {
-            "type": "string",
-            "title": "Min Topup Micros"
-          },
-          "bonus_type": {
-            "type": "string",
-            "enum": [
-              "fixed",
-              "percent"
-            ],
-            "title": "Bonus Type"
-          },
-          "bonus_fixed_micros": {
-            "type": "string",
-            "title": "Bonus Fixed Micros"
-          },
-          "bonus_percent_bp": {
-            "type": "integer",
-            "title": "Bonus Percent Bp"
-          },
-          "bonus_cap_micros": {
+          "attention": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "past_due_blocked",
+                  "past_due",
+                  "subscription_required",
+                  "allowance_exhausted",
+                  "allowance_warning",
+                  "trial_ending"
+                ]
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Bonus Cap Micros"
-          },
-          "example_bonus_micros": {
-            "type": "string",
-            "title": "Example Bonus Micros",
-            "description": "bonus at the minimum top-up"
-          },
-          "messages_equivalent": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Messages Equivalent",
-            "description": "ESTIMATE: sent messages the example bonus pays at the current outbound price"
-          },
-          "remaining_uses": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Remaining Uses"
-          },
-          "bonus_validity_days": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bonus Validity Days"
-          },
-          "first_topup_only": {
-            "type": "boolean",
-            "title": "First Topup Only"
+            "title": "Attention",
+            "description": "Most relevant billing issue; also listed in `attention` with a pt-BR message"
           }
         },
         "type": "object",
         "required": [
-          "campaign_id",
-          "name",
-          "display_text",
-          "starts_at",
-          "ends_at",
-          "min_topup_micros",
-          "bonus_type",
-          "bonus_fixed_micros",
-          "bonus_percent_bp",
-          "bonus_cap_micros",
-          "example_bonus_micros",
-          "messages_equivalent",
-          "remaining_uses",
-          "bonus_validity_days",
-          "first_topup_only"
+          "subscription_status",
+          "allowance_percent",
+          "cycle_ends_at",
+          "attention"
         ],
-        "title": "BonusOfferOut"
-      },
-      "BusinessAllowanceOut": {
-        "properties": {
-          "monthly_micros": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Monthly Micros",
-            "description": "Allowance in micros (integer string); null = no limit"
-          },
-          "used_micros": {
-            "type": "string",
-            "title": "Used Micros",
-            "description": "Usage in the current month (integer string in micros): charged messages plus sends still awaiting delivery"
-          },
-          "period": {
-            "type": "string",
-            "pattern": "^\\d{4}-\\d{2}$",
-            "title": "Period",
-            "description": "Current period YYYY-MM (America/Sao_Paulo)"
-          },
-          "percent": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Percent",
-            "description": "floor(used / monthly * 100); null without allowance; 100 when the allowance is 0"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "none",
-              "ok",
-              "warning",
-              "reached"
-            ],
-            "title": "Status",
-            "description": "none = no allowance; warning >= 80%; reached >= 100% (outbound sends refused)"
-          },
-          "resets_at": {
-            "type": "string",
-            "format": "date",
-            "title": "Resets At",
-            "description": "First day of the next month (YYYY-MM-DD), when usage resets"
-          }
-        },
-        "type": "object",
-        "required": [
-          "monthly_micros",
-          "used_micros",
-          "period",
-          "percent",
-          "status",
-          "resets_at"
-        ],
-        "title": "BusinessAllowanceOut",
-        "description": "Monthly allowance of the business and its usage in the current period (ADR-015)."
+        "title": "BillingStatusOut",
+        "description": "Situação da assinatura e da franquia de mensagens (ADR-019); campos nulos sem `billing:read`."
       },
       "BusinessComplianceOut": {
         "properties": {
@@ -5157,9 +5568,6 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
-          },
-          "allowance": {
-            "$ref": "#/components/schemas/BusinessAllowanceOut"
           }
         },
         "type": "object",
@@ -5178,8 +5586,7 @@
           "terms_accepted_by",
           "status",
           "created_at",
-          "updated_at",
-          "allowance"
+          "updated_at"
         ],
         "title": "BusinessOut"
       },
@@ -5273,273 +5680,6 @@
           "history_sync"
         ],
         "title": "CapabilitiesOut"
-      },
-      "ChannelBillingOut": {
-        "properties": {
-          "state": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "grace",
-              "suspended"
-            ],
-            "title": "State",
-            "description": "grace: fee overdue, still sending until grace_until; suspended: outbound sends blocked"
-          },
-          "current_period_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Current Period End",
-            "description": "end of the paid/open cycle = next charge"
-          },
-          "grace_until": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Grace Until"
-          },
-          "monthly_fee_micros": {
-            "type": "string",
-            "title": "Monthly Fee Micros",
-            "description": "effective monthly fee for this number in micros (0 = free)"
-          },
-          "price_source": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "default",
-                  "custom"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Price Source",
-            "description": "always null: the price origin is internal to Meshio operators"
-          },
-          "amount_due_micros": {
-            "type": "string",
-            "title": "Amount Due Micros",
-            "description": "overdue monthly fees (past_due) for this number, in micros"
-          }
-        },
-        "type": "object",
-        "required": [
-          "state",
-          "current_period_end",
-          "grace_until",
-          "monthly_fee_micros",
-          "price_source",
-          "amount_due_micros"
-        ],
-        "title": "ChannelBillingOut",
-        "description": "Mensalidade do número em reais (micros; R$ 1 = 1000000), ciclo mensal debitado da carteira."
-      },
-      "ChannelFeeOut": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "channel_id": {
-            "type": "string",
-            "title": "Channel Id"
-          },
-          "business_id": {
-            "type": "string",
-            "title": "Business Id"
-          },
-          "business_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Business Name"
-          },
-          "display_phone_number": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Display Phone Number"
-          },
-          "mode": {
-            "type": "string",
-            "enum": [
-              "cloud_api",
-              "coexistence"
-            ],
-            "title": "Mode"
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "cycle",
-              "mode_change"
-            ],
-            "title": "Kind"
-          },
-          "period_start": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Period Start"
-          },
-          "period_end": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Period End"
-          },
-          "amount_micros": {
-            "type": "string",
-            "title": "Amount Micros"
-          },
-          "unit_price_micros": {
-            "type": "string",
-            "title": "Unit Price Micros"
-          },
-          "price_source": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "default",
-                  "custom"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Price Source"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "charged",
-              "past_due",
-              "exempt",
-              "waived"
-            ],
-            "title": "Status"
-          },
-          "charged_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Charged At"
-          },
-          "attempts": {
-            "type": "integer",
-            "title": "Attempts"
-          },
-          "waived_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Waived At"
-          },
-          "waive_reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Waive Reason"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "channel_id",
-          "business_id",
-          "business_name",
-          "display_phone_number",
-          "mode",
-          "kind",
-          "period_start",
-          "period_end",
-          "amount_micros",
-          "unit_price_micros",
-          "price_source",
-          "status",
-          "charged_at",
-          "attempts",
-          "waived_at",
-          "waive_reason",
-          "created_at"
-        ],
-        "title": "ChannelFeeOut"
-      },
-      "ChannelFeePage": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/ChannelFeeOut"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Cursor"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data",
-          "next_cursor"
-        ],
-        "title": "ChannelFeePage"
       },
       "ChannelHistoryItem": {
         "properties": {
@@ -5761,9 +5901,6 @@
             ],
             "title": "Environment"
           },
-          "billing": {
-            "$ref": "#/components/schemas/ChannelBillingOut"
-          },
           "meta_health": {
             "$ref": "#/components/schemas/MetaHealthOut"
           }
@@ -5786,7 +5923,6 @@
           "created_at",
           "updated_at",
           "environment",
-          "billing",
           "meta_health"
         ],
         "title": "ChannelOut"
@@ -6395,52 +6531,15 @@
       },
       "ConsumptionOut": {
         "properties": {
-          "period": {
-            "$ref": "#/components/schemas/PeriodOut"
-          },
-          "group_by": {
+          "id": {
             "type": "string",
-            "enum": [
-              "business",
-              "channel",
-              "kind",
-              "day"
-            ],
-            "title": "Group By"
+            "title": "Id"
           },
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/ConsumptionRowOut"
-            },
-            "type": "array",
-            "title": "Rows"
-          },
-          "total_micros": {
+          "message_id": {
             "type": "string",
-            "title": "Total Micros"
+            "title": "Message Id"
           },
-          "total_quantity": {
-            "type": "integer",
-            "title": "Total Quantity"
-          }
-        },
-        "type": "object",
-        "required": [
-          "period",
-          "group_by",
-          "rows",
-          "total_micros",
-          "total_quantity"
-        ],
-        "title": "ConsumptionOut"
-      },
-      "ConsumptionRowOut": {
-        "properties": {
-          "key": {
-            "type": "string",
-            "title": "Key"
-          },
-          "label": {
+          "meta_message_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -6449,35 +6548,185 @@
                 "type": "null"
               }
             ],
-            "title": "Label"
+            "title": "Meta Message Id"
           },
-          "kind": {
+          "cycle_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Id"
+          },
+          "business_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Id"
+          },
+          "channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Id"
+          },
+          "direction": {
             "type": "string",
             "enum": [
-              "outbound_message",
-              "inbound_message",
-              "number_fee"
+              "outbound",
+              "inbound"
             ],
-            "title": "Kind"
+            "title": "Direction"
           },
-          "quantity": {
-            "type": "integer",
-            "title": "Quantity"
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
           },
-          "amount_micros": {
+          "classification": {
             "type": "string",
-            "title": "Amount Micros"
+            "enum": [
+              "included",
+              "overage",
+              "excess_unbilled",
+              "no_cycle"
+            ],
+            "title": "Classification"
+          },
+          "overage_price_micros": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overage Price Micros"
+          },
+          "evidence": {
+            "type": "string",
+            "enum": [
+              "delivered",
+              "read",
+              "inbound_received"
+            ],
+            "title": "Evidence"
+          },
+          "status_history_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status History Id"
+          },
+          "accepted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted At",
+            "description": "when Meshio accepted the send (outbound)"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At",
+            "description": "Meta timestamp of the delivery/receipt (fallback: receipt)"
+          },
+          "counted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Counted At"
+          },
+          "late": {
+            "type": "boolean",
+            "title": "Late",
+            "description": "counted in a different cycle from the one of acceptance/occurrence"
+          },
+          "rule_version": {
+            "type": "integer",
+            "title": "Rule Version"
           }
         },
         "type": "object",
         "required": [
-          "key",
-          "label",
-          "kind",
-          "quantity",
-          "amount_micros"
+          "id",
+          "message_id",
+          "meta_message_id",
+          "cycle_id",
+          "business_id",
+          "channel_id",
+          "direction",
+          "origin",
+          "classification",
+          "overage_price_micros",
+          "evidence",
+          "status_history_id",
+          "accepted_at",
+          "occurred_at",
+          "counted_at",
+          "late",
+          "rule_version"
         ],
-        "title": "ConsumptionRowOut"
+        "title": "ConsumptionOut",
+        "description": "Evidência de uma mensagem contabilizada (uma por mensagem, imutável)."
+      },
+      "ConsumptionPage": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ConsumptionOut"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "next_cursor"
+        ],
+        "title": "ConsumptionPage"
       },
       "ConversationOut": {
         "properties": {
@@ -6648,6 +6897,38 @@
           "mode"
         ],
         "title": "CreateSignupSessionIn"
+      },
+      "CreateSubscriptionIn": {
+        "properties": {
+          "seats": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Seats"
+          },
+          "payment_method": {
+            "type": "string",
+            "enum": [
+              "invoice_link",
+              "wallet",
+              "card_auto_renewal",
+              "pix_automatic"
+            ],
+            "title": "Payment Method",
+            "description": "invoice_link (Pix or card per invoice) | wallet (preserved paid balance; requires accept_wallet_terms). card_auto_renewal and pix_automatic → 422 PAYMENT_METHOD_UNAVAILABLE",
+            "default": "invoice_link"
+          },
+          "accept_wallet_terms": {
+            "type": "boolean",
+            "title": "Accept Wallet Terms",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "seats"
+        ],
+        "title": "CreateSubscriptionIn"
       },
       "CreateTemplateIn": {
         "properties": {
@@ -6824,6 +7105,144 @@
         ],
         "title": "CreateWebhookEndpointIn"
       },
+      "CyclePage": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CycleSummaryOut"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "next_cursor"
+        ],
+        "title": "CyclePage"
+      },
+      "CycleSummaryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "trial",
+              "paid"
+            ],
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ],
+            "title": "Status"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period Start"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period End"
+          },
+          "seats": {
+            "type": "integer",
+            "title": "Seats"
+          },
+          "max_numbers": {
+            "type": "integer",
+            "title": "Max Numbers"
+          },
+          "included_messages": {
+            "type": "integer",
+            "title": "Included Messages"
+          },
+          "used_messages": {
+            "type": "integer",
+            "title": "Used Messages"
+          },
+          "held_messages": {
+            "type": "integer",
+            "title": "Held Messages"
+          },
+          "remaining_messages": {
+            "type": "integer",
+            "title": "Remaining Messages"
+          },
+          "overage_messages": {
+            "type": "integer",
+            "title": "Overage Messages"
+          },
+          "overage_micros": {
+            "type": "string",
+            "title": "Overage Micros"
+          },
+          "excess_unbilled_messages": {
+            "type": "integer",
+            "title": "Excess Unbilled Messages"
+          },
+          "unit_price_micros": {
+            "type": "string",
+            "title": "Unit Price Micros"
+          },
+          "overage_price_micros": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overage Price Micros"
+          },
+          "complimentary": {
+            "type": "boolean",
+            "title": "Complimentary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "period_start",
+          "period_end",
+          "seats",
+          "max_numbers",
+          "included_messages",
+          "used_messages",
+          "held_messages",
+          "remaining_messages",
+          "overage_messages",
+          "overage_micros",
+          "excess_unbilled_messages",
+          "unit_price_micros",
+          "overage_price_micros",
+          "complimentary"
+        ],
+        "title": "CycleSummaryOut"
+      },
       "DeliveryStatsOut": {
         "properties": {
           "total": {
@@ -6873,119 +7292,6 @@
         "type": "object",
         "title": "DisconnectIn"
       },
-      "EffectivePriceOut": {
-        "properties": {
-          "field": {
-            "type": "string",
-            "enum": [
-              "outbound_message",
-              "inbound_message",
-              "number_fee_cloud_api",
-              "number_fee_coexistence"
-            ],
-            "title": "Field"
-          },
-          "micros": {
-            "type": "string",
-            "title": "Micros",
-            "description": "integer string in micros (millionths of BRL): R$ 1 = 1000000, R$ 0.01 = 10000"
-          },
-          "brl": {
-            "type": "string",
-            "title": "Brl",
-            "description": "exact decimal BRL, e.g. 0.005"
-          },
-          "source": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "default",
-                  "custom"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source",
-            "description": "operator views only (null in the integrator API)"
-          },
-          "default_micros": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Default Micros",
-            "description": "operator views only (null in the integrator API)"
-          }
-        },
-        "type": "object",
-        "required": [
-          "field",
-          "micros",
-          "brl",
-          "source",
-          "default_micros"
-        ],
-        "title": "EffectivePriceOut"
-      },
-      "EffectivePricingOut": {
-        "properties": {
-          "available": {
-            "type": "boolean",
-            "title": "Available",
-            "description": "false = no default table published (nothing is charged)"
-          },
-          "currency": {
-            "type": "string",
-            "const": "BRL",
-            "title": "Currency",
-            "default": "BRL"
-          },
-          "default_version": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Default Version"
-          },
-          "override_version": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Override Version"
-          },
-          "prices": {
-            "items": {
-              "$ref": "#/components/schemas/EffectivePriceOut"
-            },
-            "type": "array",
-            "title": "Prices"
-          }
-        },
-        "type": "object",
-        "required": [
-          "available",
-          "default_version",
-          "override_version",
-          "prices"
-        ],
-        "title": "EffectivePricingOut"
-      },
       "EntryOut": {
         "properties": {
           "id": {
@@ -7012,7 +7318,8 @@
               "adjustment",
               "opening_balance",
               "chargeback_reversal",
-              "closure_refund"
+              "closure_refund",
+              "invoice_payment"
             ],
             "title": "Kind"
           },
@@ -7482,8 +7789,8 @@
           "templates": {
             "$ref": "#/components/schemas/TemplatesStatusOut"
           },
-          "balance": {
-            "$ref": "#/components/schemas/BalanceStatusOut"
+          "billing": {
+            "$ref": "#/components/schemas/BillingStatusOut"
           },
           "attention": {
             "items": {
@@ -7501,10 +7808,263 @@
           "messages_24h",
           "webhooks_24h",
           "templates",
-          "balance",
+          "billing",
           "attention"
         ],
         "title": "IntegrationStatusOut"
+      },
+      "InvoiceLineOut": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "unit_price_micros": {
+            "type": "string",
+            "title": "Unit Price Micros"
+          },
+          "amount_micros": {
+            "type": "string",
+            "title": "Amount Micros"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description",
+          "quantity",
+          "unit_price_micros",
+          "amount_micros",
+          "period_start",
+          "period_end"
+        ],
+        "title": "InvoiceLineOut"
+      },
+      "InvoiceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "subscription_id": {
+            "type": "string",
+            "title": "Subscription Id"
+          },
+          "cycle_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "subscription",
+              "seat_addition",
+              "overage"
+            ],
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "paid",
+              "void",
+              "uncollectible"
+            ],
+            "title": "Status"
+          },
+          "currency": {
+            "type": "string",
+            "const": "BRL",
+            "title": "Currency",
+            "default": "BRL"
+          },
+          "total_micros": {
+            "type": "string",
+            "title": "Total Micros"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period Start"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period End"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "due_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Due At"
+          },
+          "grace_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grace Until",
+            "description": "sends keep working until this moment if unpaid"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
+          "paid_via": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "pix",
+                  "card",
+                  "wallet",
+                  "manual"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid Via"
+          },
+          "checkout_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Url",
+            "description": "payment link (Pix or card) while the invoice is open"
+          },
+          "checkout_expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Expires At"
+          },
+          "simulated": {
+            "type": "boolean",
+            "title": "Simulated",
+            "description": "true = simulated provider (dev/test), no real money",
+            "default": false
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLineOut"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "subscription_id",
+          "cycle_id",
+          "kind",
+          "status",
+          "total_micros",
+          "period_start",
+          "period_end",
+          "issued_at",
+          "due_at",
+          "grace_until",
+          "paid_at",
+          "paid_via",
+          "checkout_url",
+          "checkout_expires_at",
+          "lines"
+        ],
+        "title": "InvoiceOut"
+      },
+      "InvoicePage": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceOut"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "next_cursor"
+        ],
+        "title": "InvoicePage"
       },
       "LaunchOut": {
         "properties": {
@@ -8995,148 +9555,35 @@
         ],
         "title": "MetaLogResultOut"
       },
-      "ModeTotalOut": {
+      "NumberLimitOut": {
         "properties": {
-          "count": {
+          "limit": {
             "type": "integer",
-            "title": "Count"
+            "title": "Limit"
           },
-          "fee_micros": {
-            "type": "string",
-            "title": "Fee Micros"
-          },
-          "source": {
+          "reason": {
             "type": "string",
             "enum": [
-              "default",
-              "custom"
+              "trial",
+              "seats",
+              "no_active_plan",
+              "trial_available"
             ],
-            "title": "Source"
+            "title": "Reason"
           }
         },
         "type": "object",
         "required": [
-          "count",
-          "fee_micros",
-          "source"
+          "limit",
+          "reason"
         ],
-        "title": "ModeTotalOut"
+        "title": "NumberLimitOut"
       },
-      "NumberFeeSummaryOut": {
-        "properties": {
-          "feature_enabled": {
-            "type": "boolean",
-            "title": "Feature Enabled"
-          },
-          "billing_exempt": {
-            "type": "boolean",
-            "title": "Billing Exempt"
-          },
-          "cycle": {
-            "type": "string",
-            "const": "monthly",
-            "title": "Cycle",
-            "default": "monthly"
-          },
-          "active_numbers": {
-            "type": "integer",
-            "title": "Active Numbers"
-          },
-          "monthly_total_micros": {
-            "type": "string",
-            "title": "Monthly Total Micros"
-          },
-          "by_mode": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/ModeTotalOut"
-            },
-            "type": "object",
-            "title": "By Mode"
-          },
-          "next_charge_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Charge At"
-          },
-          "next_charge_micros": {
-            "type": "string",
-            "title": "Next Charge Micros"
-          },
-          "past_due_micros": {
-            "type": "string",
-            "title": "Past Due Micros"
-          },
-          "suspended_channels": {
-            "type": "integer",
-            "title": "Suspended Channels"
-          },
-          "channels_in_grace": {
-            "type": "integer",
-            "title": "Channels In Grace"
-          },
-          "runway_days": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Runway Days"
-          },
-          "numbers": {
-            "items": {
-              "$ref": "#/components/schemas/NumberLineOut"
-            },
-            "type": "array",
-            "title": "Numbers"
-          }
-        },
-        "type": "object",
-        "required": [
-          "feature_enabled",
-          "billing_exempt",
-          "active_numbers",
-          "monthly_total_micros",
-          "by_mode",
-          "next_charge_at",
-          "next_charge_micros",
-          "past_due_micros",
-          "suspended_channels",
-          "channels_in_grace",
-          "runway_days",
-          "numbers"
-        ],
-        "title": "NumberFeeSummaryOut"
-      },
-      "NumberLineOut": {
+      "NumberUsageOut": {
         "properties": {
           "channel_id": {
             "type": "string",
             "title": "Channel Id"
-          },
-          "business_id": {
-            "type": "string",
-            "title": "Business Id"
-          },
-          "business_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Business Name"
           },
           "display_phone_number": {
             "anyOf": [
@@ -9149,82 +9596,23 @@
             ],
             "title": "Display Phone Number"
           },
-          "verified_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Verified Name"
+          "outbound_messages": {
+            "type": "integer",
+            "title": "Outbound Messages"
           },
-          "mode": {
-            "type": "string",
-            "enum": [
-              "cloud_api",
-              "coexistence"
-            ],
-            "title": "Mode"
-          },
-          "monthly_fee_micros": {
-            "type": "string",
-            "title": "Monthly Fee Micros"
-          },
-          "state": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "grace",
-              "suspended"
-            ],
-            "title": "State"
-          },
-          "next_charge_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Charge At"
-          },
-          "grace_until": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Grace Until"
-          },
-          "amount_due_micros": {
-            "type": "string",
-            "title": "Amount Due Micros"
+          "inbound_messages": {
+            "type": "integer",
+            "title": "Inbound Messages"
           }
         },
         "type": "object",
         "required": [
           "channel_id",
-          "business_id",
-          "business_name",
           "display_phone_number",
-          "verified_name",
-          "mode",
-          "monthly_fee_micros",
-          "state",
-          "next_charge_at",
-          "grace_until",
-          "amount_due_micros"
+          "outbound_messages",
+          "inbound_messages"
         ],
-        "title": "NumberLineOut"
+        "title": "NumberUsageOut"
       },
       "OptInIn": {
         "properties": {
@@ -9382,6 +9770,98 @@
         ],
         "title": "OptOutPage"
       },
+      "OverageIn": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "limit_micros": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{1,16}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Micros",
+            "description": "limit per cycle, in micros"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "OverageIn"
+      },
+      "OverageOut": {
+        "properties": {
+          "price_micros": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Micros",
+            "description": "null = overage unavailable"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "price_undefined",
+                  "trial",
+                  "feature_disabled",
+                  "no_subscription"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable Reason"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "limit_micros": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Micros"
+          },
+          "used_micros": {
+            "type": "string",
+            "title": "Used Micros"
+          }
+        },
+        "type": "object",
+        "required": [
+          "price_micros",
+          "available",
+          "unavailable_reason",
+          "enabled",
+          "limit_micros",
+          "used_micros"
+        ],
+        "title": "OverageOut"
+      },
       "OverviewChannelsOut": {
         "properties": {
           "total": {
@@ -9535,40 +10015,217 @@
         ],
         "title": "OverviewWebhooksOut"
       },
-      "PeriodOut": {
+      "PastDueOut": {
         "properties": {
-          "from": {
+          "invoice_id": {
             "type": "string",
-            "format": "date",
-            "title": "From"
+            "title": "Invoice Id"
           },
-          "to": {
+          "amount_micros": {
             "type": "string",
-            "format": "date",
-            "title": "To"
+            "title": "Amount Micros"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
+          },
+          "grace_until": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Grace Until"
+          },
+          "sending_blocked": {
+            "type": "boolean",
+            "title": "Sending Blocked"
           }
         },
         "type": "object",
         "required": [
-          "from",
-          "to"
+          "invoice_id",
+          "amount_micros",
+          "since",
+          "grace_until",
+          "sending_blocked"
         ],
-        "title": "PeriodOut"
+        "title": "PastDueOut"
       },
-      "RefundRequestIn": {
+      "PayInvoiceIn": {
         "properties": {
-          "reason": {
+          "method": {
             "type": "string",
-            "maxLength": 500,
-            "minLength": 3,
-            "title": "Reason"
+            "enum": [
+              "link",
+              "wallet"
+            ],
+            "title": "Method",
+            "default": "link"
+          },
+          "accept_wallet_terms": {
+            "type": "boolean",
+            "title": "Accept Wallet Terms",
+            "description": "required to pay with the preserved paid balance without a prior opt-in",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "PayInvoiceIn"
+      },
+      "PaymentMethodIn": {
+        "properties": {
+          "payment_method": {
+            "type": "string",
+            "enum": [
+              "invoice_link",
+              "wallet",
+              "card_auto_renewal",
+              "pix_automatic"
+            ],
+            "title": "Payment Method"
+          },
+          "accept_wallet_terms": {
+            "type": "boolean",
+            "title": "Accept Wallet Terms",
+            "default": false
           }
         },
         "type": "object",
         "required": [
-          "reason"
+          "payment_method"
         ],
-        "title": "RefundRequestIn"
+        "title": "PaymentMethodIn"
+      },
+      "PricingOut": {
+        "properties": {
+          "currency": {
+            "type": "string",
+            "const": "BRL",
+            "title": "Currency",
+            "default": "BRL"
+          },
+          "plan_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Version"
+          },
+          "effective_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective From"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/TierOut"
+            },
+            "type": "array",
+            "title": "Tiers"
+          },
+          "messages_per_number": {
+            "type": "integer",
+            "title": "Messages Per Number"
+          },
+          "overage_price_micros": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overage Price Micros"
+          },
+          "complimentary": {
+            "type": "boolean",
+            "title": "Complimentary"
+          },
+          "custom_conditions": {
+            "type": "boolean",
+            "title": "Custom Conditions",
+            "description": "a custom condition (override) applies to this integrator"
+          },
+          "trial": {
+            "$ref": "#/components/schemas/TrialTermsOut"
+          },
+          "grace_days": {
+            "type": "integer",
+            "title": "Grace Days"
+          },
+          "renewal_lead_days": {
+            "type": "integer",
+            "title": "Renewal Lead Days"
+          },
+          "meta_fees_separate": {
+            "type": "boolean",
+            "const": true,
+            "title": "Meta Fees Separate",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan_version",
+          "effective_from",
+          "tiers",
+          "messages_per_number",
+          "overage_price_micros",
+          "complimentary",
+          "custom_conditions",
+          "trial",
+          "grace_days",
+          "renewal_lead_days"
+        ],
+        "title": "PricingOut",
+        "description": "Condições vigentes para o integrador (tabela publicada + condição personalizada)."
+      },
+      "PromotionalLotOut": {
+        "properties": {
+          "remaining_micros": {
+            "type": "string",
+            "title": "Remaining Micros"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "usable": {
+            "type": "boolean",
+            "title": "Usable"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "remaining_micros",
+          "expires_at",
+          "usable",
+          "label"
+        ],
+        "title": "PromotionalLotOut"
       },
       "RefundRequestOut": {
         "properties": {
@@ -9663,6 +10320,346 @@
           "reason"
         ],
         "title": "RejectedTemplateOut"
+      },
+      "RenewalOut": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "seats": {
+            "type": "integer",
+            "title": "Seats"
+          },
+          "unit_price_micros": {
+            "type": "string",
+            "title": "Unit Price Micros"
+          },
+          "total_micros": {
+            "type": "string",
+            "title": "Total Micros"
+          },
+          "invoice_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Id",
+            "description": "renewal invoice already issued (renewal_lead_days before)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "seats",
+          "unit_price_micros",
+          "total_micros",
+          "invoice_id"
+        ],
+        "title": "RenewalOut"
+      },
+      "SeatAdditionOut": {
+        "properties": {
+          "add": {
+            "type": "integer",
+            "title": "Add"
+          },
+          "new_seats": {
+            "type": "integer",
+            "title": "New Seats"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/TierOut"
+          },
+          "unit_price_micros": {
+            "type": "string",
+            "title": "Unit Price Micros",
+            "description": "price of the new seats (tier of the new total)"
+          },
+          "remaining_days": {
+            "type": "integer",
+            "title": "Remaining Days"
+          },
+          "cycle_days": {
+            "type": "integer",
+            "title": "Cycle Days"
+          },
+          "prorated_amount_micros": {
+            "type": "string",
+            "title": "Prorated Amount Micros"
+          },
+          "added_messages": {
+            "type": "integer",
+            "title": "Added Messages"
+          },
+          "included_messages_after": {
+            "type": "integer",
+            "title": "Included Messages After"
+          },
+          "renewal_seats": {
+            "type": "integer",
+            "title": "Renewal Seats"
+          },
+          "renewal_unit_price_micros": {
+            "type": "string",
+            "title": "Renewal Unit Price Micros"
+          },
+          "renewal_total_micros": {
+            "type": "string",
+            "title": "Renewal Total Micros"
+          }
+        },
+        "type": "object",
+        "required": [
+          "add",
+          "new_seats",
+          "tier",
+          "unit_price_micros",
+          "remaining_days",
+          "cycle_days",
+          "prorated_amount_micros",
+          "added_messages",
+          "included_messages_after",
+          "renewal_seats",
+          "renewal_unit_price_micros",
+          "renewal_total_micros"
+        ],
+        "title": "SeatAdditionOut"
+      },
+      "SeatReductionOut": {
+        "properties": {
+          "target": {
+            "type": "integer",
+            "title": "Target"
+          },
+          "current_seats": {
+            "type": "integer",
+            "title": "Current Seats"
+          },
+          "connected_numbers": {
+            "type": "integer",
+            "title": "Connected Numbers"
+          },
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          },
+          "block_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "target_not_lower",
+                  "too_many_connected_numbers",
+                  "seats_invalid"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Reason"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/TierOut"
+          },
+          "renewal_unit_price_micros": {
+            "type": "string",
+            "title": "Renewal Unit Price Micros"
+          },
+          "renewal_total_micros": {
+            "type": "string",
+            "title": "Renewal Total Micros"
+          },
+          "effective_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective At",
+            "description": "the reduction applies at the next renewal (no credit)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target",
+          "current_seats",
+          "connected_numbers",
+          "allowed",
+          "block_reason",
+          "tier",
+          "renewal_unit_price_micros",
+          "renewal_total_micros",
+          "effective_at"
+        ],
+        "title": "SeatReductionOut"
+      },
+      "SeatsChangeOut": {
+        "properties": {
+          "subscription": {
+            "$ref": "#/components/schemas/SubscriptionOut"
+          },
+          "invoice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvoiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payment_link_error": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "provider_unavailable"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Link Error",
+            "description": "the payment link could not be created now; retry with POST /v1/billing/invoices/{id}/pay"
+          },
+          "addition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeatAdditionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reduction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeatReductionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription",
+          "invoice"
+        ],
+        "title": "SeatsChangeOut"
+      },
+      "SeatsIn": {
+        "properties": {
+          "add": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add",
+            "description": "immediate, prorated invoice"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target",
+            "description": "reduction at the next renewal"
+          },
+          "cancel_scheduled_reduction": {
+            "type": "boolean",
+            "title": "Cancel Scheduled Reduction",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "SeatsIn"
+      },
+      "SeatsPreviewIn": {
+        "properties": {
+          "add": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          }
+        },
+        "type": "object",
+        "title": "SeatsPreviewIn"
+      },
+      "SeatsPreviewOut": {
+        "properties": {
+          "addition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeatAdditionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reduction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeatReductionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "addition",
+          "reduction"
+        ],
+        "title": "SeatsPreviewOut"
       },
       "SendMessageIn": {
         "properties": {
@@ -10025,86 +11022,39 @@
         ],
         "title": "SendMessageOut"
       },
-      "SettingsOut": {
+      "SendingOut": {
         "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "version": {
-            "type": "integer",
-            "title": "Version"
-          },
-          "min_topup_cents": {
-            "type": "integer",
-            "title": "Min Topup Cents"
-          },
-          "trial_days": {
-            "type": "integer",
-            "title": "Trial Days"
-          },
-          "trial_bonus_micros": {
-            "type": "string",
-            "title": "Trial Bonus Micros"
-          },
-          "trial_max_numbers": {
-            "type": "integer",
-            "title": "Trial Max Numbers"
-          },
-          "trial_bonus_expires": {
+          "allowed": {
             "type": "boolean",
-            "title": "Trial Bonus Expires"
-          },
-          "trial_warning_days": {
-            "type": "integer",
-            "title": "Trial Warning Days"
-          },
-          "refund_window_days": {
-            "type": "integer",
-            "title": "Refund Window Days"
-          },
-          "chargeback_suspension_threshold": {
-            "type": "integer",
-            "title": "Chargeback Suspension Threshold"
+            "title": "Allowed"
           },
           "reason": {
-            "type": "string",
-            "title": "Reason"
-          },
-          "created_by": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "trial_ended",
+                  "no_plan",
+                  "subscription_canceled",
+                  "subscription_incomplete",
+                  "trial_available",
+                  "subscription_past_due"
+                ]
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Created By"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
+            "title": "Reason",
+            "description": "why new sends are blocked (null = allowed): trial_ended | no_plan | subscription_canceled | subscription_incomplete | trial_available | subscription_past_due"
           }
         },
         "type": "object",
         "required": [
-          "id",
-          "version",
-          "min_topup_cents",
-          "trial_days",
-          "trial_bonus_micros",
-          "trial_max_numbers",
-          "trial_bonus_expires",
-          "trial_warning_days",
-          "refund_window_days",
-          "chargeback_suspension_threshold",
-          "reason",
-          "created_by",
-          "created_at"
+          "allowed",
+          "reason"
         ],
-        "title": "SettingsOut"
+        "title": "SendingOut"
       },
       "SignupSessionCreatedOut": {
         "properties": {
@@ -10494,6 +11444,384 @@
           "checked_at"
         ],
         "title": "StatusNumberOut"
+      },
+      "SubscriptionChangeResultOut": {
+        "properties": {
+          "subscription": {
+            "$ref": "#/components/schemas/SubscriptionOut"
+          },
+          "invoice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvoiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payment_link_error": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "provider_unavailable"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Link Error",
+            "description": "the payment link could not be created now; retry with POST /v1/billing/invoices/{id}/pay"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription",
+          "invoice"
+        ],
+        "title": "SubscriptionChangeResultOut"
+      },
+      "SubscriptionOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "trial",
+              "trial_ended",
+              "incomplete",
+              "active",
+              "past_due",
+              "canceled"
+            ],
+            "title": "Status",
+            "description": "none = never had a plan (trial still available); trial = free trial open; trial_ended = trial over without a subscription; incomplete = awaiting the first payment; same values as `billing.subscription_status` in GET /v1/status/integration"
+          },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id"
+          },
+          "seats": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats"
+          },
+          "scheduled_seats": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled Seats",
+            "description": "seat reduction scheduled for the next renewal"
+          },
+          "connected_numbers": {
+            "type": "integer",
+            "title": "Connected Numbers"
+          },
+          "number_limit": {
+            "$ref": "#/components/schemas/NumberLimitOut"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TierOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unit_price_micros": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price Micros"
+          },
+          "monthly_total_micros": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Total Micros"
+          },
+          "messages_per_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Messages Per Number"
+          },
+          "current_cycle": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CycleSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_renewal_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Renewal At"
+          },
+          "renewal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RenewalOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancel_at_period_end": {
+            "type": "boolean",
+            "title": "Cancel At Period End"
+          },
+          "canceled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canceled At"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "invoice_link",
+                  "wallet"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method"
+          },
+          "wallet_consent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WalletConsentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overage": {
+            "$ref": "#/components/schemas/OverageOut"
+          },
+          "past_due": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PastDueOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trial": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrialOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trial_available": {
+            "type": "boolean",
+            "title": "Trial Available"
+          },
+          "sending": {
+            "$ref": "#/components/schemas/SendingOut"
+          },
+          "open_invoices": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceOut"
+            },
+            "type": "array",
+            "title": "Open Invoices"
+          },
+          "billing_enabled": {
+            "type": "boolean",
+            "title": "Billing Enabled"
+          },
+          "payments_enabled": {
+            "type": "boolean",
+            "title": "Payments Enabled"
+          },
+          "plan_available": {
+            "type": "boolean",
+            "title": "Plan Available",
+            "description": "false = no published plan: contracting is unavailable (503)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "subscription_id",
+          "seats",
+          "scheduled_seats",
+          "connected_numbers",
+          "number_limit",
+          "tier",
+          "unit_price_micros",
+          "monthly_total_micros",
+          "messages_per_number",
+          "current_cycle",
+          "next_renewal_at",
+          "renewal",
+          "cancel_at_period_end",
+          "canceled_at",
+          "payment_method",
+          "wallet_consent",
+          "overage",
+          "past_due",
+          "trial",
+          "trial_available",
+          "sending",
+          "open_invoices",
+          "billing_enabled",
+          "payments_enabled",
+          "plan_available"
+        ],
+        "title": "SubscriptionOut"
+      },
+      "SubscriptionPreviewIn": {
+        "properties": {
+          "seats": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Seats"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seats"
+        ],
+        "title": "SubscriptionPreviewIn"
+      },
+      "SubscriptionPreviewOut": {
+        "properties": {
+          "seats": {
+            "type": "integer",
+            "title": "Seats"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/TierOut"
+          },
+          "unit_price_micros": {
+            "type": "string",
+            "title": "Unit Price Micros"
+          },
+          "monthly_total_micros": {
+            "type": "string",
+            "title": "Monthly Total Micros"
+          },
+          "included_messages": {
+            "type": "integer",
+            "title": "Included Messages",
+            "description": "seats × messages_per_number, shared by all numbers"
+          },
+          "messages_per_number": {
+            "type": "integer",
+            "title": "Messages Per Number"
+          },
+          "overage_price_micros": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overage Price Micros"
+          },
+          "connected_numbers": {
+            "type": "integer",
+            "title": "Connected Numbers"
+          },
+          "plan_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Version"
+          },
+          "complimentary": {
+            "type": "boolean",
+            "title": "Complimentary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seats",
+          "tier",
+          "unit_price_micros",
+          "monthly_total_micros",
+          "included_messages",
+          "messages_per_number",
+          "overage_price_micros",
+          "connected_numbers",
+          "plan_version",
+          "complimentary"
+        ],
+        "title": "SubscriptionPreviewOut"
       },
       "TemplateButtonIn": {
         "properties": {
@@ -11091,6 +12419,38 @@
         ],
         "title": "TextIn"
       },
+      "TierOut": {
+        "properties": {
+          "min_numbers": {
+            "type": "integer",
+            "title": "Min Numbers"
+          },
+          "max_numbers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Numbers",
+            "description": "null = open-ended (last tier)"
+          },
+          "unit_price_micros": {
+            "type": "string",
+            "title": "Unit Price Micros",
+            "description": "price per contracted number per month, for ALL numbers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "min_numbers",
+          "max_numbers",
+          "unit_price_micros"
+        ],
+        "title": "TierOut"
+      },
       "TopErrorOut": {
         "properties": {
           "code": {
@@ -11114,38 +12474,6 @@
           "count"
         ],
         "title": "TopErrorOut"
-      },
-      "TopupIn": {
-        "properties": {
-          "amount_cents": {
-            "type": "integer",
-            "maximum": 5000000.0,
-            "minimum": 1.0,
-            "title": "Amount Cents",
-            "description": "BRL cents (R$ 100,00 = 10000); minimum = setting min_topup_cents"
-          },
-          "method": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "pix",
-                  "card"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Method",
-            "description": "Optional; omit it. The payment page accepts Pix and credit card (single payment), or only Pix when card payments are blocked for the account. The top-up method stays null until paid and is then the method actually used at the checkout."
-          }
-        },
-        "type": "object",
-        "required": [
-          "amount_cents"
-        ],
-        "title": "TopupIn"
       },
       "TopupOut": {
         "properties": {
@@ -11456,125 +12784,76 @@
       },
       "TrialOut": {
         "properties": {
-          "exists": {
-            "type": "boolean",
-            "title": "Exists"
+          "cycle_id": {
+            "type": "string",
+            "title": "Cycle Id"
           },
           "active": {
             "type": "boolean",
             "title": "Active"
           },
-          "status": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "active",
-                  "ended",
-                  "canceled"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Status"
+          "period_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period Start"
           },
-          "started_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Started At"
-          },
-          "ends_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ends At"
-          },
-          "days": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Days"
+          "period_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Period End"
           },
           "days_left": {
             "type": "integer",
             "title": "Days Left"
           },
-          "bonus_granted_micros": {
-            "type": "string",
-            "title": "Bonus Granted Micros"
-          },
-          "bonus_remaining_micros": {
-            "type": "string",
-            "title": "Bonus Remaining Micros"
-          },
           "max_numbers": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Max Numbers"
           },
-          "numbers_used": {
+          "message_limit": {
             "type": "integer",
-            "title": "Numbers Used"
+            "title": "Message Limit"
           },
-          "number_fees_during_trial": {
-            "type": "boolean",
-            "title": "Number Fees During Trial",
-            "default": false
-          },
-          "settings_version": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Settings Version"
+          "used_messages": {
+            "type": "integer",
+            "title": "Used Messages"
           }
         },
         "type": "object",
         "required": [
-          "exists",
+          "cycle_id",
           "active",
-          "status",
-          "started_at",
-          "ends_at",
-          "days",
+          "period_start",
+          "period_end",
           "days_left",
-          "bonus_granted_micros",
-          "bonus_remaining_micros",
           "max_numbers",
-          "numbers_used",
-          "settings_version"
+          "message_limit",
+          "used_messages"
         ],
         "title": "TrialOut"
+      },
+      "TrialTermsOut": {
+        "properties": {
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "max_numbers": {
+            "type": "integer",
+            "title": "Max Numbers"
+          },
+          "message_limit": {
+            "type": "integer",
+            "title": "Message Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "days",
+          "max_numbers",
+          "message_limit"
+        ],
+        "title": "TrialTermsOut"
       },
       "UpdateWebhookEndpointIn": {
         "properties": {
@@ -11875,6 +13154,44 @@
         ],
         "title": "VersionOut"
       },
+      "WalletConsentOut": {
+        "properties": {
+          "accepted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Accepted At"
+          },
+          "accepted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted By"
+          },
+          "terms_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terms Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted_at",
+          "accepted_by",
+          "terms_version"
+        ],
+        "title": "WalletConsentOut"
+      },
       "WalletOut": {
         "properties": {
           "currency": {
@@ -11883,110 +13200,71 @@
             "title": "Currency",
             "default": "BRL"
           },
-          "balance_micros": {
-            "type": "string",
-            "title": "Balance Micros",
-            "description": "total = paid + bonus"
-          },
           "paid_balance_micros": {
             "type": "string",
-            "title": "Paid Balance Micros"
+            "title": "Paid Balance Micros",
+            "description": "paid balance: may pay invoices (opt-in) and is refundable"
           },
-          "bonus_balance_micros": {
+          "promotional_balance_micros": {
             "type": "string",
-            "title": "Bonus Balance Micros"
+            "title": "Promotional Balance Micros",
+            "description": "valid bonus/promotional balance: never pays invoices"
           },
-          "reserved_micros": {
-            "type": "string",
-            "title": "Reserved Micros",
-            "description": "reserved for accepted sends awaiting delivery"
-          },
-          "pending_micros": {
-            "type": "string",
-            "title": "Pending Micros",
-            "description": "charges owed awaiting balance (e.g. inbound without balance)"
-          },
-          "available_micros": {
-            "type": "string",
-            "title": "Available Micros",
-            "description": "balance - reserved - pending + credit_limit"
-          },
-          "credit_limit_micros": {
-            "type": "string",
-            "title": "Credit Limit Micros"
-          },
-          "low_balance_threshold_micros": {
-            "type": "string",
-            "title": "Low Balance Threshold Micros"
-          },
-          "billing_exempt": {
-            "type": "boolean",
-            "title": "Billing Exempt"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "low",
-              "depleted",
-              "negative",
-              "exempt"
-            ],
-            "title": "Status"
-          },
-          "feature_enabled": {
-            "type": "boolean",
-            "title": "Feature Enabled"
-          },
-          "payments_enabled": {
-            "type": "boolean",
-            "title": "Payments Enabled"
-          },
-          "monthly_numbers_micros": {
-            "type": "string",
-            "title": "Monthly Numbers Micros"
-          },
-          "past_due_micros": {
-            "type": "string",
-            "title": "Past Due Micros"
-          },
-          "card_payments_enabled": {
-            "type": "boolean",
-            "title": "Card Payments Enabled",
-            "description": "false after chargebacks/fraud: top-ups only by Pix (card disabled for this integrator)"
-          },
-          "open_disputes": {
-            "type": "integer",
-            "title": "Open Disputes",
-            "description": "payment disputes (chargebacks) under review"
+          "promotional_lots": {
+            "items": {
+              "$ref": "#/components/schemas/PromotionalLotOut"
+            },
+            "type": "array",
+            "title": "Promotional Lots"
           },
           "negative_due_micros": {
             "type": "string",
             "title": "Negative Due Micros",
-            "description": "negative paid balance (e.g. after a chargeback) settled first by the next top-up"
+            "description": "negative paid balance (e.g. after a chargeback)"
+          },
+          "card_payments_enabled": {
+            "type": "boolean",
+            "title": "Card Payments Enabled"
+          },
+          "open_disputes": {
+            "type": "integer",
+            "title": "Open Disputes"
+          },
+          "pays_invoices": {
+            "type": "boolean",
+            "title": "Pays Invoices",
+            "description": "the subscription is set to pay invoices with the paid balance"
+          },
+          "wallet_consent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WalletConsentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "terms_version": {
+            "type": "string",
+            "title": "Terms Version",
+            "description": "current version of the pay-with-balance terms"
           }
         },
         "type": "object",
         "required": [
-          "balance_micros",
           "paid_balance_micros",
-          "bonus_balance_micros",
-          "reserved_micros",
-          "pending_micros",
-          "available_micros",
-          "credit_limit_micros",
-          "low_balance_threshold_micros",
-          "billing_exempt",
-          "status",
-          "feature_enabled",
-          "payments_enabled",
-          "monthly_numbers_micros",
-          "past_due_micros",
+          "promotional_balance_micros",
+          "promotional_lots",
+          "negative_due_micros",
           "card_payments_enabled",
           "open_disputes",
-          "negative_due_micros"
+          "pays_invoices",
+          "wallet_consent",
+          "terms_version"
         ],
-        "title": "WalletOut"
+        "title": "WalletOut",
+        "description": "Saldo preservado do modelo anterior (reais). Não vira mensagens; só o pago paga faturas (opt-in)."
       },
       "WebhookDeliveryOut": {
         "properties": {

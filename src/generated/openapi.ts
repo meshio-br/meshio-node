@@ -662,7 +662,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health of the integration: numbers, messages, webhooks, templates and balance */
+        /** Health of the integration: numbers, messages, webhooks, templates and subscription */
         get: operations["status_integration"];
         put?: never;
         post?: never;
@@ -755,17 +755,239 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/billing/wallet": {
+    "/v1/billing/subscription": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Prepaid BRL wallet of the active integrator */
-        get: operations["billing_wallet"];
+        /** Subscription, cycle and payment status */
+        get: operations["billing_subscription_get"];
+        put?: never;
+        /** Subscribe (incomplete until the first invoice is paid; the paid cycle starts at payment) */
+        post: operations["billing_subscription_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/subscription/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview a subscription: tier, unit price, monthly total and included messages */
+        post: operations["billing_subscription_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/subscription/seats/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview adding seats (prorated) or a reduction at the next renewal */
+        post: operations["billing_subscription_seats_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/subscription/seats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add seats now (prorated invoice), schedule a reduction, or cancel the scheduled reduction */
+        post: operations["billing_subscription_seats_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/subscription/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel at the end of the paid cycle (an unpaid subscription is canceled now) */
+        post: operations["billing_subscription_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/subscription/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Undo a scheduled cancellation */
+        post: operations["billing_subscription_resume"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/subscription/overage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Authorize (or stop) overage with a limit in BRL per cycle */
+        patch: operations["billing_subscription_overage_update"];
+        trace?: never;
+    };
+    "/v1/billing/subscription/payment-method": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Payment method: invoice link (Pix/card) or preserved paid balance (explicit opt-in) */
+        patch: operations["billing_subscription_payment_method_update"];
+        trace?: never;
+    };
+    "/v1/billing/allowance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Message allowance of the current cycle (shared by all numbers) */
+        get: operations["billing_allowance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/allowance/consumptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Counted messages with evidence (paginated, newest first) */
+        get: operations["billing_allowance_consumptions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/cycles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Billing cycles (history) */
+        get: operations["billing_cycles_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Invoices of the subscription */
+        get: operations["billing_invoices_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/invoices/{invoice_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Invoice with lines */
+        get: operations["billing_invoices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/invoices/{invoice_id}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pay: current or new payment link (Pix/card), or the preserved paid balance */
+        post: operations["billing_invoices_pay"];
         delete?: never;
         options?: never;
         head?: never;
@@ -779,8 +1001,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Effective prices of the integrator (read-only) */
+        /** Conditions in effect for the integrator */
         get: operations["billing_pricing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/wallet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preserved balance (paid and promotional) and opt-in */
+        get: operations["billing_wallet"];
         put?: never;
         post?: never;
         delete?: never;
@@ -796,7 +1035,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Statement (ledger) in BRL */
+        /** Statement of the preserved balance (BRL) */
         get: operations["billing_entries_list"];
         put?: never;
         post?: never;
@@ -823,125 +1062,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/billing/consumption": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Consumption aggregated (BRL) */
-        get: operations["billing_consumption"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/billing/number-fees": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Monthly number fee charges (cycles) */
-        get: operations["billing_number_fees_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/billing/number-fees/summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Monthly fees of the numbers */
-        get: operations["billing_number_fees_summary"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/billing/trial": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Trial period of the integrator */
-        get: operations["billing_trial"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/billing/settings/public": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Current commercial parameters (minimum top-up, trial offer) */
-        get: operations["billing_settings_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/billing/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update the low-balance alert (admin) */
-        patch: operations["billing_settings_update"];
-        trace?: never;
-    };
-    "/v1/billing/bonus-offers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Top-up bonus campaigns available now */
-        get: operations["billing_bonus_offers"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/billing/topups": {
         parameters: {
             query?: never;
@@ -949,11 +1069,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Top-ups of the integrator */
+        /** Top-ups of the previous model (history) */
         get: operations["topups_list"];
         put?: never;
-        /** Add balance (creates a checkout; balance is credited only after confirmed payment) */
-        post: operations["topups_create"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -967,27 +1086,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Top-up */
+        /** Top-up of the previous model */
         get: operations["topups_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/billing/topups/{topup_id}/refund-request": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Request a refund of a top-up (admin; within the refund window; executed by Meshio) */
-        post: operations["topups_request_refund"];
         delete?: never;
         options?: never;
         head?: never;
@@ -998,6 +1100,74 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AllowanceOut
+         * @description Franquia do ciclo atual (compartilhada entre todos os números do integrador).
+         */
+        AllowanceOut: {
+            /**
+             * Cycle Id
+             * @description null when there is no open cycle (see access_reason)
+             */
+            cycle_id: string | null;
+            /** Kind */
+            kind: ("trial" | "paid") | null;
+            /** Period Start */
+            period_start: string | null;
+            /** Period End */
+            period_end: string | null;
+            /**
+             * Access Reason
+             * @description why there is no open cycle; null otherwise
+             */
+            access_reason: ("trial_ended" | "no_plan" | "subscription_canceled" | "subscription_incomplete" | "trial_available") | null;
+            /** Included Messages */
+            included_messages: number;
+            /**
+             * Used Messages
+             * @description messages counted in the cycle (delivered sends + new received)
+             */
+            used_messages: number;
+            /**
+             * Held Messages
+             * @description accepted sends waiting for delivery (reserved)
+             */
+            held_messages: number;
+            /**
+             * Remaining Messages
+             * @description included - used - held, never below 0
+             */
+            remaining_messages: number;
+            /**
+             * Percent
+             * @description used / included, integer percent (may exceed 100)
+             */
+            percent: number;
+            /** Outbound Messages */
+            outbound_messages: number;
+            /** Inbound Messages */
+            inbound_messages: number;
+            /** Overage Messages */
+            overage_messages: number;
+            /** Overage Micros */
+            overage_micros: string;
+            /**
+             * Overage Price Micros
+             * @description snapshot of the cycle; null = overage unavailable
+             */
+            overage_price_micros: string | null;
+            /** Overage Enabled */
+            overage_enabled: boolean;
+            /** Overage Limit Micros */
+            overage_limit_micros: string | null;
+            /**
+             * Excess Unbilled Messages
+             * @description received above the allowance without overage (no charge)
+             */
+            excess_unbilled_messages: number;
+            /** By Number */
+            by_number: components["schemas"]["NumberUsageOut"][];
+        };
         /** ApprovalSummaryOut */
         ApprovalSummaryOut: {
             /**
@@ -1031,115 +1201,31 @@ export interface components {
              */
             href: string;
         };
-        /** BalanceStatusOut */
-        BalanceStatusOut: {
-            /** Feature Enabled */
-            feature_enabled: boolean;
-            /**
-             * Available Micros
-             * @description available BRL balance in micros (R$ 1 = 1000000)
-             */
-            available_micros: string | null;
-            /** Numbers In Grace */
-            numbers_in_grace: number;
-            /** Numbers Suspended */
-            numbers_suspended: number;
-        };
-        /** BillingSettingsIn */
-        BillingSettingsIn: {
-            /**
-             * Low Balance Threshold Micros
-             * @description integer string in micros (millionths of BRL): R$ 1 = 1000000, R$ 0.01 = 10000
-             */
-            low_balance_threshold_micros: string;
-        };
-        /** BonusOfferListOut */
-        BonusOfferListOut: {
-            /** Data */
-            data: components["schemas"]["BonusOfferOut"][];
-        };
-        /** BonusOfferOut */
-        BonusOfferOut: {
-            /** Campaign Id */
-            campaign_id: string;
-            /** Name */
-            name: string;
-            /** Display Text */
-            display_text: string;
-            /**
-             * Starts At
-             * Format: date-time
-             */
-            starts_at: string;
-            /** Ends At */
-            ends_at: string | null;
-            /** Min Topup Micros */
-            min_topup_micros: string;
-            /**
-             * Bonus Type
-             * @enum {string}
-             */
-            bonus_type: "fixed" | "percent";
-            /** Bonus Fixed Micros */
-            bonus_fixed_micros: string;
-            /** Bonus Percent Bp */
-            bonus_percent_bp: number;
-            /** Bonus Cap Micros */
-            bonus_cap_micros: string | null;
-            /**
-             * Example Bonus Micros
-             * @description bonus at the minimum top-up
-             */
-            example_bonus_micros: string;
-            /**
-             * Messages Equivalent
-             * @description ESTIMATE: sent messages the example bonus pays at the current outbound price
-             */
-            messages_equivalent: number | null;
-            /** Remaining Uses */
-            remaining_uses: number | null;
-            /** Bonus Validity Days */
-            bonus_validity_days: number | null;
-            /** First Topup Only */
-            first_topup_only: boolean;
-        };
         /**
-         * BusinessAllowanceOut
-         * @description Monthly allowance of the business and its usage in the current period (ADR-015).
+         * BillingStatusOut
+         * @description Situação da assinatura e da franquia de mensagens (ADR-019); campos nulos sem `billing:read`.
          */
-        BusinessAllowanceOut: {
+        BillingStatusOut: {
             /**
-             * Monthly Micros
-             * @description Allowance in micros (integer string); null = no limit
+             * Subscription Status
+             * @description none = never had a plan (trial still available); trial = free trial open; trial_ended = trial over without a subscription; incomplete = awaiting the first payment; null = the caller cannot read billing
              */
-            monthly_micros: string | null;
+            subscription_status: ("none" | "trial" | "trial_ended" | "incomplete" | "active" | "past_due" | "canceled") | null;
             /**
-             * Used Micros
-             * @description Usage in the current month (integer string in micros): charged messages plus sends still awaiting delivery
+             * Allowance Percent
+             * @description floor(counted / included * 100) of the open cycle; null without an open cycle
              */
-            used_micros: string;
+            allowance_percent: number | null;
             /**
-             * Period
-             * @description Current period YYYY-MM (America/Sao_Paulo)
+             * Cycle Ends At
+             * @description End of the open cycle (renewal or trial end)
              */
-            period: string;
+            cycle_ends_at: string | null;
             /**
-             * Percent
-             * @description floor(used / monthly * 100); null without allowance; 100 when the allowance is 0
+             * Attention
+             * @description Most relevant billing issue; also listed in `attention` with a pt-BR message
              */
-            percent: number | null;
-            /**
-             * Status
-             * @description none = no allowance; warning >= 80%; reached >= 100% (outbound sends refused)
-             * @enum {string}
-             */
-            status: "none" | "ok" | "warning" | "reached";
-            /**
-             * Resets At
-             * Format: date
-             * @description First day of the next month (YYYY-MM-DD), when usage resets
-             */
-            resets_at: string;
+            attention: ("past_due_blocked" | "past_due" | "subscription_required" | "allowance_exhausted" | "allowance_warning" | "trial_ending") | null;
         };
         /** BusinessComplianceOut */
         BusinessComplianceOut: {
@@ -1202,7 +1288,6 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
-            allowance: components["schemas"]["BusinessAllowanceOut"];
         };
         /** BusinessPage */
         BusinessPage: {
@@ -1230,104 +1315,6 @@ export interface components {
             business_app_echoes: boolean;
             /** History Sync */
             history_sync: boolean;
-        };
-        /**
-         * ChannelBillingOut
-         * @description Mensalidade do número em reais (micros; R$ 1 = 1000000), ciclo mensal debitado da carteira.
-         */
-        ChannelBillingOut: {
-            /**
-             * State
-             * @description grace: fee overdue, still sending until grace_until; suspended: outbound sends blocked
-             * @enum {string}
-             */
-            state: "ok" | "grace" | "suspended";
-            /**
-             * Current Period End
-             * @description end of the paid/open cycle = next charge
-             */
-            current_period_end: string | null;
-            /** Grace Until */
-            grace_until: string | null;
-            /**
-             * Monthly Fee Micros
-             * @description effective monthly fee for this number in micros (0 = free)
-             */
-            monthly_fee_micros: string;
-            /**
-             * Price Source
-             * @description always null: the price origin is internal to Meshio operators
-             */
-            price_source: ("default" | "custom") | null;
-            /**
-             * Amount Due Micros
-             * @description overdue monthly fees (past_due) for this number, in micros
-             */
-            amount_due_micros: string;
-        };
-        /** ChannelFeeOut */
-        ChannelFeeOut: {
-            /** Id */
-            id: string;
-            /** Channel Id */
-            channel_id: string;
-            /** Business Id */
-            business_id: string;
-            /** Business Name */
-            business_name: string | null;
-            /** Display Phone Number */
-            display_phone_number: string | null;
-            /**
-             * Mode
-             * @enum {string}
-             */
-            mode: "cloud_api" | "coexistence";
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "cycle" | "mode_change";
-            /**
-             * Period Start
-             * Format: date-time
-             */
-            period_start: string;
-            /**
-             * Period End
-             * Format: date-time
-             */
-            period_end: string;
-            /** Amount Micros */
-            amount_micros: string;
-            /** Unit Price Micros */
-            unit_price_micros: string;
-            /** Price Source */
-            price_source: ("default" | "custom") | null;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "charged" | "past_due" | "exempt" | "waived";
-            /** Charged At */
-            charged_at: string | null;
-            /** Attempts */
-            attempts: number;
-            /** Waived At */
-            waived_at: string | null;
-            /** Waive Reason */
-            waive_reason: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /** ChannelFeePage */
-        ChannelFeePage: {
-            /** Data */
-            data: components["schemas"]["ChannelFeeOut"][];
-            /** Next Cursor */
-            next_cursor: string | null;
         };
         /** ChannelHistoryItem */
         ChannelHistoryItem: {
@@ -1409,7 +1396,6 @@ export interface components {
              * @enum {string}
              */
             environment: "simulator" | "live";
-            billing: components["schemas"]["ChannelBillingOut"];
             meta_health: components["schemas"]["MetaHealthOut"];
         };
         /** ChannelPage */
@@ -1650,36 +1636,74 @@ export interface components {
              */
             opt_out_lifted: boolean;
         };
-        /** ConsumptionOut */
+        /**
+         * ConsumptionOut
+         * @description Evidência de uma mensagem contabilizada (uma por mensagem, imutável).
+         */
         ConsumptionOut: {
-            period: components["schemas"]["PeriodOut"];
+            /** Id */
+            id: string;
+            /** Message Id */
+            message_id: string;
+            /** Meta Message Id */
+            meta_message_id: string | null;
+            /** Cycle Id */
+            cycle_id: string | null;
+            /** Business Id */
+            business_id: string | null;
+            /** Channel Id */
+            channel_id: string | null;
             /**
-             * Group By
+             * Direction
              * @enum {string}
              */
-            group_by: "business" | "channel" | "kind" | "day";
-            /** Rows */
-            rows: components["schemas"]["ConsumptionRowOut"][];
-            /** Total Micros */
-            total_micros: string;
-            /** Total Quantity */
-            total_quantity: number;
+            direction: "outbound" | "inbound";
+            /** Origin */
+            origin: string | null;
+            /**
+             * Classification
+             * @enum {string}
+             */
+            classification: "included" | "overage" | "excess_unbilled" | "no_cycle";
+            /** Overage Price Micros */
+            overage_price_micros: string | null;
+            /**
+             * Evidence
+             * @enum {string}
+             */
+            evidence: "delivered" | "read" | "inbound_received";
+            /** Status History Id */
+            status_history_id: string | null;
+            /**
+             * Accepted At
+             * @description when Meshio accepted the send (outbound)
+             */
+            accepted_at: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             * @description Meta timestamp of the delivery/receipt (fallback: receipt)
+             */
+            occurred_at: string;
+            /**
+             * Counted At
+             * Format: date-time
+             */
+            counted_at: string;
+            /**
+             * Late
+             * @description counted in a different cycle from the one of acceptance/occurrence
+             */
+            late: boolean;
+            /** Rule Version */
+            rule_version: number;
         };
-        /** ConsumptionRowOut */
-        ConsumptionRowOut: {
-            /** Key */
-            key: string;
-            /** Label */
-            label: string | null;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "outbound_message" | "inbound_message" | "number_fee";
-            /** Quantity */
-            quantity: number;
-            /** Amount Micros */
-            amount_micros: string;
+        /** ConsumptionPage */
+        ConsumptionPage: {
+            /** Data */
+            data: components["schemas"]["ConsumptionOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
         };
         /** ConversationOut */
         ConversationOut: {
@@ -1741,6 +1765,23 @@ export interface components {
              * @enum {string}
              */
             mode: "cloud_api" | "coexistence";
+        };
+        /** CreateSubscriptionIn */
+        CreateSubscriptionIn: {
+            /** Seats */
+            seats: number;
+            /**
+             * Payment Method
+             * @description invoice_link (Pix or card per invoice) | wallet (preserved paid balance; requires accept_wallet_terms). card_auto_renewal and pix_automatic → 422 PAYMENT_METHOD_UNAVAILABLE
+             * @default invoice_link
+             * @enum {string}
+             */
+            payment_method?: "invoice_link" | "wallet" | "card_auto_renewal" | "pix_automatic";
+            /**
+             * Accept Wallet Terms
+             * @default false
+             */
+            accept_wallet_terms?: boolean;
         };
         /**
          * CreateTemplateIn
@@ -1804,6 +1845,62 @@ export interface components {
              */
             status?: "enabled" | "disabled";
         };
+        /** CyclePage */
+        CyclePage: {
+            /** Data */
+            data: components["schemas"]["CycleSummaryOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** CycleSummaryOut */
+        CycleSummaryOut: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trial" | "paid";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "closed";
+            /**
+             * Period Start
+             * Format: date-time
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date-time
+             */
+            period_end: string;
+            /** Seats */
+            seats: number;
+            /** Max Numbers */
+            max_numbers: number;
+            /** Included Messages */
+            included_messages: number;
+            /** Used Messages */
+            used_messages: number;
+            /** Held Messages */
+            held_messages: number;
+            /** Remaining Messages */
+            remaining_messages: number;
+            /** Overage Messages */
+            overage_messages: number;
+            /** Overage Micros */
+            overage_micros: string;
+            /** Excess Unbilled Messages */
+            excess_unbilled_messages: number;
+            /** Unit Price Micros */
+            unit_price_micros: string;
+            /** Overage Price Micros */
+            overage_price_micros: string | null;
+            /** Complimentary */
+            complimentary: boolean;
+        };
         /** DeliveryStatsOut */
         DeliveryStatsOut: {
             /**
@@ -1832,54 +1929,6 @@ export interface components {
              */
             confirm?: boolean;
         };
-        /** EffectivePriceOut */
-        EffectivePriceOut: {
-            /**
-             * Field
-             * @enum {string}
-             */
-            field: "outbound_message" | "inbound_message" | "number_fee_cloud_api" | "number_fee_coexistence";
-            /**
-             * Micros
-             * @description integer string in micros (millionths of BRL): R$ 1 = 1000000, R$ 0.01 = 10000
-             */
-            micros: string;
-            /**
-             * Brl
-             * @description exact decimal BRL, e.g. 0.005
-             */
-            brl: string;
-            /**
-             * Source
-             * @description operator views only (null in the integrator API)
-             */
-            source: ("default" | "custom") | null;
-            /**
-             * Default Micros
-             * @description operator views only (null in the integrator API)
-             */
-            default_micros: string | null;
-        };
-        /** EffectivePricingOut */
-        EffectivePricingOut: {
-            /**
-             * Available
-             * @description false = no default table published (nothing is charged)
-             */
-            available: boolean;
-            /**
-             * Currency
-             * @default BRL
-             * @constant
-             */
-            currency?: "BRL";
-            /** Default Version */
-            default_version: number | null;
-            /** Override Version */
-            override_version: number | null;
-            /** Prices */
-            prices: components["schemas"]["EffectivePriceOut"][];
-        };
         /** EntryOut */
         EntryOut: {
             /** Id */
@@ -1893,7 +1942,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "topup" | "topup_refund" | "topup_chargeback" | "bonus" | "bonus_revoked" | "bonus_expired" | "outbound_message" | "inbound_message" | "number_fee" | "adjustment" | "opening_balance" | "chargeback_reversal" | "closure_refund";
+            kind: "topup" | "topup_refund" | "topup_chargeback" | "bonus" | "bonus_revoked" | "bonus_expired" | "outbound_message" | "inbound_message" | "number_fee" | "adjustment" | "opening_balance" | "chargeback_reversal" | "closure_refund" | "invoice_payment";
             /**
              * Amount Micros
              * @description signed: + credit to the wallet, - debit
@@ -2037,9 +2086,102 @@ export interface components {
             messages_24h: components["schemas"]["Messages24hOut"];
             webhooks_24h: components["schemas"]["Webhooks24hOut"];
             templates: components["schemas"]["TemplatesStatusOut"];
-            balance: components["schemas"]["BalanceStatusOut"];
+            billing: components["schemas"]["BillingStatusOut"];
             /** Attention */
             attention: components["schemas"]["AttentionOut"][];
+        };
+        /** InvoiceLineOut */
+        InvoiceLineOut: {
+            /** Description */
+            description: string;
+            /** Quantity */
+            quantity: number;
+            /** Unit Price Micros */
+            unit_price_micros: string;
+            /** Amount Micros */
+            amount_micros: string;
+            /** Period Start */
+            period_start: string | null;
+            /** Period End */
+            period_end: string | null;
+        };
+        /** InvoiceOut */
+        InvoiceOut: {
+            /** Id */
+            id: string;
+            /** Subscription Id */
+            subscription_id: string;
+            /** Cycle Id */
+            cycle_id: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "subscription" | "seat_addition" | "overage";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "paid" | "void" | "uncollectible";
+            /**
+             * Currency
+             * @default BRL
+             * @constant
+             */
+            currency?: "BRL";
+            /** Total Micros */
+            total_micros: string;
+            /**
+             * Period Start
+             * Format: date-time
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date-time
+             */
+            period_end: string;
+            /**
+             * Issued At
+             * Format: date-time
+             */
+            issued_at: string;
+            /**
+             * Due At
+             * Format: date-time
+             */
+            due_at: string;
+            /**
+             * Grace Until
+             * @description sends keep working until this moment if unpaid
+             */
+            grace_until: string | null;
+            /** Paid At */
+            paid_at: string | null;
+            /** Paid Via */
+            paid_via: ("pix" | "card" | "wallet" | "manual") | null;
+            /**
+             * Checkout Url
+             * @description payment link (Pix or card) while the invoice is open
+             */
+            checkout_url: string | null;
+            /** Checkout Expires At */
+            checkout_expires_at: string | null;
+            /**
+             * Simulated
+             * @description true = simulated provider (dev/test), no real money
+             * @default false
+             */
+            simulated?: boolean;
+            /** Lines */
+            lines: components["schemas"]["InvoiceLineOut"][];
+        };
+        /** InvoicePage */
+        InvoicePage: {
+            /** Data */
+            data: components["schemas"]["InvoiceOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
         };
         /** LaunchOut */
         LaunchOut: {
@@ -2620,83 +2762,26 @@ export interface components {
              */
             label: string;
         };
-        /** ModeTotalOut */
-        ModeTotalOut: {
-            /** Count */
-            count: number;
-            /** Fee Micros */
-            fee_micros: string;
+        /** NumberLimitOut */
+        NumberLimitOut: {
+            /** Limit */
+            limit: number;
             /**
-             * Source
+             * Reason
              * @enum {string}
              */
-            source: "default" | "custom";
+            reason: "trial" | "seats" | "no_active_plan" | "trial_available";
         };
-        /** NumberFeeSummaryOut */
-        NumberFeeSummaryOut: {
-            /** Feature Enabled */
-            feature_enabled: boolean;
-            /** Billing Exempt */
-            billing_exempt: boolean;
-            /**
-             * Cycle
-             * @default monthly
-             * @constant
-             */
-            cycle?: "monthly";
-            /** Active Numbers */
-            active_numbers: number;
-            /** Monthly Total Micros */
-            monthly_total_micros: string;
-            /** By Mode */
-            by_mode: {
-                [key: string]: components["schemas"]["ModeTotalOut"];
-            };
-            /** Next Charge At */
-            next_charge_at: string | null;
-            /** Next Charge Micros */
-            next_charge_micros: string;
-            /** Past Due Micros */
-            past_due_micros: string;
-            /** Suspended Channels */
-            suspended_channels: number;
-            /** Channels In Grace */
-            channels_in_grace: number;
-            /** Runway Days */
-            runway_days: number | null;
-            /** Numbers */
-            numbers: components["schemas"]["NumberLineOut"][];
-        };
-        /** NumberLineOut */
-        NumberLineOut: {
+        /** NumberUsageOut */
+        NumberUsageOut: {
             /** Channel Id */
             channel_id: string;
-            /** Business Id */
-            business_id: string;
-            /** Business Name */
-            business_name: string | null;
             /** Display Phone Number */
             display_phone_number: string | null;
-            /** Verified Name */
-            verified_name: string | null;
-            /**
-             * Mode
-             * @enum {string}
-             */
-            mode: "cloud_api" | "coexistence";
-            /** Monthly Fee Micros */
-            monthly_fee_micros: string;
-            /**
-             * State
-             * @enum {string}
-             */
-            state: "ok" | "grace" | "suspended";
-            /** Next Charge At */
-            next_charge_at: string | null;
-            /** Grace Until */
-            grace_until: string | null;
-            /** Amount Due Micros */
-            amount_due_micros: string;
+            /** Outbound Messages */
+            outbound_messages: number;
+            /** Inbound Messages */
+            inbound_messages: number;
         };
         /**
          * OptInIn
@@ -2766,6 +2851,34 @@ export interface components {
             data: components["schemas"]["OptOutOut"][];
             /** Next Cursor */
             next_cursor?: string | null;
+        };
+        /** OverageIn */
+        OverageIn: {
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Limit Micros
+             * @description limit per cycle, in micros
+             */
+            limit_micros?: string | null;
+        };
+        /** OverageOut */
+        OverageOut: {
+            /**
+             * Price Micros
+             * @description null = overage unavailable
+             */
+            price_micros: string | null;
+            /** Available */
+            available: boolean;
+            /** Unavailable Reason */
+            unavailable_reason: ("price_undefined" | "trial" | "feature_disabled" | "no_subscription") | null;
+            /** Enabled */
+            enabled: boolean;
+            /** Limit Micros */
+            limit_micros: string | null;
+            /** Used Micros */
+            used_micros: string;
         };
         /** OverviewChannelsOut */
         OverviewChannelsOut: {
@@ -2842,23 +2955,103 @@ export interface components {
              */
             failed: number;
         };
-        /** PeriodOut */
-        PeriodOut: {
+        /** PastDueOut */
+        PastDueOut: {
+            /** Invoice Id */
+            invoice_id: string;
+            /** Amount Micros */
+            amount_micros: string;
             /**
-             * From
-             * Format: date
+             * Since
+             * Format: date-time
              */
-            from: string;
+            since: string;
             /**
-             * To
-             * Format: date
+             * Grace Until
+             * Format: date-time
              */
-            to: string;
+            grace_until: string;
+            /** Sending Blocked */
+            sending_blocked: boolean;
         };
-        /** RefundRequestIn */
-        RefundRequestIn: {
-            /** Reason */
-            reason: string;
+        /** PayInvoiceIn */
+        PayInvoiceIn: {
+            /**
+             * Method
+             * @default link
+             * @enum {string}
+             */
+            method?: "link" | "wallet";
+            /**
+             * Accept Wallet Terms
+             * @description required to pay with the preserved paid balance without a prior opt-in
+             * @default false
+             */
+            accept_wallet_terms?: boolean;
+        };
+        /** PaymentMethodIn */
+        PaymentMethodIn: {
+            /**
+             * Payment Method
+             * @enum {string}
+             */
+            payment_method: "invoice_link" | "wallet" | "card_auto_renewal" | "pix_automatic";
+            /**
+             * Accept Wallet Terms
+             * @default false
+             */
+            accept_wallet_terms?: boolean;
+        };
+        /**
+         * PricingOut
+         * @description Condições vigentes para o integrador (tabela publicada + condição personalizada).
+         */
+        PricingOut: {
+            /**
+             * Currency
+             * @default BRL
+             * @constant
+             */
+            currency?: "BRL";
+            /** Plan Version */
+            plan_version: number | null;
+            /** Effective From */
+            effective_from: string | null;
+            /** Tiers */
+            tiers: components["schemas"]["TierOut"][];
+            /** Messages Per Number */
+            messages_per_number: number;
+            /** Overage Price Micros */
+            overage_price_micros: string | null;
+            /** Complimentary */
+            complimentary: boolean;
+            /**
+             * Custom Conditions
+             * @description a custom condition (override) applies to this integrator
+             */
+            custom_conditions: boolean;
+            trial: components["schemas"]["TrialTermsOut"];
+            /** Grace Days */
+            grace_days: number;
+            /** Renewal Lead Days */
+            renewal_lead_days: number;
+            /**
+             * Meta Fees Separate
+             * @default true
+             * @constant
+             */
+            meta_fees_separate?: true;
+        };
+        /** PromotionalLotOut */
+        PromotionalLotOut: {
+            /** Remaining Micros */
+            remaining_micros: string;
+            /** Expires At */
+            expires_at: string | null;
+            /** Usable */
+            usable: boolean;
+            /** Label */
+            label: string;
         };
         /** RefundRequestOut */
         RefundRequestOut: {
@@ -2891,6 +3084,119 @@ export interface components {
             name: string;
             /** Reason */
             reason: string | null;
+        };
+        /** RenewalOut */
+        RenewalOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Seats */
+            seats: number;
+            /** Unit Price Micros */
+            unit_price_micros: string;
+            /** Total Micros */
+            total_micros: string;
+            /**
+             * Invoice Id
+             * @description renewal invoice already issued (renewal_lead_days before)
+             */
+            invoice_id: string | null;
+        };
+        /** SeatAdditionOut */
+        SeatAdditionOut: {
+            /** Add */
+            add: number;
+            /** New Seats */
+            new_seats: number;
+            tier: components["schemas"]["TierOut"];
+            /**
+             * Unit Price Micros
+             * @description price of the new seats (tier of the new total)
+             */
+            unit_price_micros: string;
+            /** Remaining Days */
+            remaining_days: number;
+            /** Cycle Days */
+            cycle_days: number;
+            /** Prorated Amount Micros */
+            prorated_amount_micros: string;
+            /** Added Messages */
+            added_messages: number;
+            /** Included Messages After */
+            included_messages_after: number;
+            /** Renewal Seats */
+            renewal_seats: number;
+            /** Renewal Unit Price Micros */
+            renewal_unit_price_micros: string;
+            /** Renewal Total Micros */
+            renewal_total_micros: string;
+        };
+        /** SeatReductionOut */
+        SeatReductionOut: {
+            /** Target */
+            target: number;
+            /** Current Seats */
+            current_seats: number;
+            /** Connected Numbers */
+            connected_numbers: number;
+            /** Allowed */
+            allowed: boolean;
+            /** Block Reason */
+            block_reason: ("target_not_lower" | "too_many_connected_numbers" | "seats_invalid") | null;
+            tier: components["schemas"]["TierOut"];
+            /** Renewal Unit Price Micros */
+            renewal_unit_price_micros: string;
+            /** Renewal Total Micros */
+            renewal_total_micros: string;
+            /**
+             * Effective At
+             * @description the reduction applies at the next renewal (no credit)
+             */
+            effective_at: string | null;
+        };
+        /** SeatsChangeOut */
+        SeatsChangeOut: {
+            subscription: components["schemas"]["SubscriptionOut"];
+            invoice: components["schemas"]["InvoiceOut"] | null;
+            /**
+             * Payment Link Error
+             * @description the payment link could not be created now; retry with POST /v1/billing/invoices/{id}/pay
+             */
+            payment_link_error?: "provider_unavailable" | null;
+            addition?: components["schemas"]["SeatAdditionOut"] | null;
+            reduction?: components["schemas"]["SeatReductionOut"] | null;
+        };
+        /** SeatsIn */
+        SeatsIn: {
+            /**
+             * Add
+             * @description immediate, prorated invoice
+             */
+            add?: number | null;
+            /**
+             * Target
+             * @description reduction at the next renewal
+             */
+            target?: number | null;
+            /**
+             * Cancel Scheduled Reduction
+             * @default false
+             */
+            cancel_scheduled_reduction?: boolean;
+        };
+        /** SeatsPreviewIn */
+        SeatsPreviewIn: {
+            /** Add */
+            add?: number | null;
+            /** Target */
+            target?: number | null;
+        };
+        /** SeatsPreviewOut */
+        SeatsPreviewOut: {
+            addition: components["schemas"]["SeatAdditionOut"] | null;
+            reduction: components["schemas"]["SeatReductionOut"] | null;
         };
         /**
          * SendMessageIn
@@ -3024,37 +3330,15 @@ export interface components {
              */
             idempotent_replay?: boolean;
         };
-        /** SettingsOut */
-        SettingsOut: {
-            /** Id */
-            id: string;
-            /** Version */
-            version: number;
-            /** Min Topup Cents */
-            min_topup_cents: number;
-            /** Trial Days */
-            trial_days: number;
-            /** Trial Bonus Micros */
-            trial_bonus_micros: string;
-            /** Trial Max Numbers */
-            trial_max_numbers: number;
-            /** Trial Bonus Expires */
-            trial_bonus_expires: boolean;
-            /** Trial Warning Days */
-            trial_warning_days: number;
-            /** Refund Window Days */
-            refund_window_days: number;
-            /** Chargeback Suspension Threshold */
-            chargeback_suspension_threshold: number;
-            /** Reason */
-            reason: string;
-            /** Created By */
-            created_by: string | null;
+        /** SendingOut */
+        SendingOut: {
+            /** Allowed */
+            allowed: boolean;
             /**
-             * Created At
-             * Format: date-time
+             * Reason
+             * @description why new sends are blocked (null = allowed): trial_ended | no_plan | subscription_canceled | subscription_incomplete | trial_available | subscription_past_due
              */
-            created_at: string;
+            reason: ("trial_ended" | "no_plan" | "subscription_canceled" | "subscription_incomplete" | "trial_available" | "subscription_past_due") | null;
         };
         /** SignupSessionCreatedOut */
         SignupSessionCreatedOut: {
@@ -3191,6 +3475,102 @@ export interface components {
             messaging_limit: string | null;
             /** Checked At */
             checked_at: string | null;
+        };
+        /** SubscriptionChangeResultOut */
+        SubscriptionChangeResultOut: {
+            subscription: components["schemas"]["SubscriptionOut"];
+            invoice: components["schemas"]["InvoiceOut"] | null;
+            /**
+             * Payment Link Error
+             * @description the payment link could not be created now; retry with POST /v1/billing/invoices/{id}/pay
+             */
+            payment_link_error?: "provider_unavailable" | null;
+        };
+        /** SubscriptionOut */
+        SubscriptionOut: {
+            /**
+             * Status
+             * @description none = never had a plan (trial still available); trial = free trial open; trial_ended = trial over without a subscription; incomplete = awaiting the first payment; same values as `billing.subscription_status` in GET /v1/status/integration
+             * @enum {string}
+             */
+            status: "none" | "trial" | "trial_ended" | "incomplete" | "active" | "past_due" | "canceled";
+            /** Subscription Id */
+            subscription_id: string | null;
+            /** Seats */
+            seats: number | null;
+            /**
+             * Scheduled Seats
+             * @description seat reduction scheduled for the next renewal
+             */
+            scheduled_seats: number | null;
+            /** Connected Numbers */
+            connected_numbers: number;
+            number_limit: components["schemas"]["NumberLimitOut"];
+            tier: components["schemas"]["TierOut"] | null;
+            /** Unit Price Micros */
+            unit_price_micros: string | null;
+            /** Monthly Total Micros */
+            monthly_total_micros: string | null;
+            /** Messages Per Number */
+            messages_per_number: number | null;
+            current_cycle: components["schemas"]["CycleSummaryOut"] | null;
+            /** Next Renewal At */
+            next_renewal_at: string | null;
+            renewal: components["schemas"]["RenewalOut"] | null;
+            /** Cancel At Period End */
+            cancel_at_period_end: boolean;
+            /** Canceled At */
+            canceled_at: string | null;
+            /** Payment Method */
+            payment_method: ("invoice_link" | "wallet") | null;
+            wallet_consent: components["schemas"]["WalletConsentOut"] | null;
+            overage: components["schemas"]["OverageOut"];
+            past_due: components["schemas"]["PastDueOut"] | null;
+            trial: components["schemas"]["TrialOut"] | null;
+            /** Trial Available */
+            trial_available: boolean;
+            sending: components["schemas"]["SendingOut"];
+            /** Open Invoices */
+            open_invoices: components["schemas"]["InvoiceOut"][];
+            /** Billing Enabled */
+            billing_enabled: boolean;
+            /** Payments Enabled */
+            payments_enabled: boolean;
+            /**
+             * Plan Available
+             * @description false = no published plan: contracting is unavailable (503)
+             */
+            plan_available: boolean;
+        };
+        /** SubscriptionPreviewIn */
+        SubscriptionPreviewIn: {
+            /** Seats */
+            seats: number;
+        };
+        /** SubscriptionPreviewOut */
+        SubscriptionPreviewOut: {
+            /** Seats */
+            seats: number;
+            tier: components["schemas"]["TierOut"];
+            /** Unit Price Micros */
+            unit_price_micros: string;
+            /** Monthly Total Micros */
+            monthly_total_micros: string;
+            /**
+             * Included Messages
+             * @description seats × messages_per_number, shared by all numbers
+             */
+            included_messages: number;
+            /** Messages Per Number */
+            messages_per_number: number;
+            /** Overage Price Micros */
+            overage_price_micros: string | null;
+            /** Connected Numbers */
+            connected_numbers: number;
+            /** Plan Version */
+            plan_version: number | null;
+            /** Complimentary */
+            complimentary: boolean;
         };
         /** TemplateButtonIn */
         TemplateButtonIn: {
@@ -3391,6 +3771,21 @@ export interface components {
             /** Body */
             body: string;
         };
+        /** TierOut */
+        TierOut: {
+            /** Min Numbers */
+            min_numbers: number;
+            /**
+             * Max Numbers
+             * @description null = open-ended (last tier)
+             */
+            max_numbers: number | null;
+            /**
+             * Unit Price Micros
+             * @description price per contracted number per month, for ALL numbers
+             */
+            unit_price_micros: string;
+        };
         /** TopErrorOut */
         TopErrorOut: {
             /**
@@ -3402,19 +3797,6 @@ export interface components {
             title: string;
             /** Count */
             count: number;
-        };
-        /** TopupIn */
-        TopupIn: {
-            /**
-             * Amount Cents
-             * @description BRL cents (R$ 100,00 = 10000); minimum = setting min_topup_cents
-             */
-            amount_cents: number;
-            /**
-             * Method
-             * @description Optional; omit it. The payment page accepts Pix and credit card (single payment), or only Pix when card payments are blocked for the account. The top-up method stays null until paid and is then the method actually used at the checkout.
-             */
-            method?: ("pix" | "card") | null;
         };
         /** TopupOut */
         TopupOut: {
@@ -3507,35 +3889,37 @@ export interface components {
         };
         /** TrialOut */
         TrialOut: {
-            /** Exists */
-            exists: boolean;
+            /** Cycle Id */
+            cycle_id: string;
             /** Active */
             active: boolean;
-            /** Status */
-            status: ("active" | "ended" | "canceled") | null;
-            /** Started At */
-            started_at: string | null;
-            /** Ends At */
-            ends_at: string | null;
-            /** Days */
-            days: number | null;
+            /**
+             * Period Start
+             * Format: date-time
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date-time
+             */
+            period_end: string;
             /** Days Left */
             days_left: number;
-            /** Bonus Granted Micros */
-            bonus_granted_micros: string;
-            /** Bonus Remaining Micros */
-            bonus_remaining_micros: string;
             /** Max Numbers */
-            max_numbers: number | null;
-            /** Numbers Used */
-            numbers_used: number;
-            /**
-             * Number Fees During Trial
-             * @default false
-             */
-            number_fees_during_trial?: boolean;
-            /** Settings Version */
-            settings_version: number | null;
+            max_numbers: number;
+            /** Message Limit */
+            message_limit: number;
+            /** Used Messages */
+            used_messages: number;
+        };
+        /** TrialTermsOut */
+        TrialTermsOut: {
+            /** Days */
+            days: number;
+            /** Max Numbers */
+            max_numbers: number;
+            /** Message Limit */
+            message_limit: number;
         };
         /** UpdateWebhookEndpointIn */
         UpdateWebhookEndpointIn: {
@@ -3642,7 +4026,22 @@ export interface components {
              */
             released_at: string | null;
         };
-        /** WalletOut */
+        /** WalletConsentOut */
+        WalletConsentOut: {
+            /**
+             * Accepted At
+             * Format: date-time
+             */
+            accepted_at: string;
+            /** Accepted By */
+            accepted_by: string | null;
+            /** Terms Version */
+            terms_version: string | null;
+        };
+        /**
+         * WalletOut
+         * @description Saldo preservado do modelo anterior (reais). Não vira mensagens; só o pago paga faturas (opt-in).
+         */
         WalletOut: {
             /**
              * Currency
@@ -3651,63 +4050,37 @@ export interface components {
              */
             currency?: "BRL";
             /**
-             * Balance Micros
-             * @description total = paid + bonus
+             * Paid Balance Micros
+             * @description paid balance: may pay invoices (opt-in) and is refundable
              */
-            balance_micros: string;
-            /** Paid Balance Micros */
             paid_balance_micros: string;
-            /** Bonus Balance Micros */
-            bonus_balance_micros: string;
             /**
-             * Reserved Micros
-             * @description reserved for accepted sends awaiting delivery
+             * Promotional Balance Micros
+             * @description valid bonus/promotional balance: never pays invoices
              */
-            reserved_micros: string;
-            /**
-             * Pending Micros
-             * @description charges owed awaiting balance (e.g. inbound without balance)
-             */
-            pending_micros: string;
-            /**
-             * Available Micros
-             * @description balance - reserved - pending + credit_limit
-             */
-            available_micros: string;
-            /** Credit Limit Micros */
-            credit_limit_micros: string;
-            /** Low Balance Threshold Micros */
-            low_balance_threshold_micros: string;
-            /** Billing Exempt */
-            billing_exempt: boolean;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "ok" | "low" | "depleted" | "negative" | "exempt";
-            /** Feature Enabled */
-            feature_enabled: boolean;
-            /** Payments Enabled */
-            payments_enabled: boolean;
-            /** Monthly Numbers Micros */
-            monthly_numbers_micros: string;
-            /** Past Due Micros */
-            past_due_micros: string;
-            /**
-             * Card Payments Enabled
-             * @description false after chargebacks/fraud: top-ups only by Pix (card disabled for this integrator)
-             */
-            card_payments_enabled: boolean;
-            /**
-             * Open Disputes
-             * @description payment disputes (chargebacks) under review
-             */
-            open_disputes: number;
+            promotional_balance_micros: string;
+            /** Promotional Lots */
+            promotional_lots: components["schemas"]["PromotionalLotOut"][];
             /**
              * Negative Due Micros
-             * @description negative paid balance (e.g. after a chargeback) settled first by the next top-up
+             * @description negative paid balance (e.g. after a chargeback)
              */
             negative_due_micros: string;
+            /** Card Payments Enabled */
+            card_payments_enabled: boolean;
+            /** Open Disputes */
+            open_disputes: number;
+            /**
+             * Pays Invoices
+             * @description the subscription is set to pay invoices with the paid balance
+             */
+            pays_invoices: boolean;
+            wallet_consent: components["schemas"]["WalletConsentOut"] | null;
+            /**
+             * Terms Version
+             * @description current version of the pay-with-balance terms
+             */
+            terms_version: string;
         };
         /** WebhookDeliveryOut */
         WebhookDeliveryOut: {
@@ -4548,8 +4921,8 @@ export interface operations {
     messages_send: {
         parameters: {
             query?: never;
-            header?: {
-                "Idempotency-Key"?: string | null;
+            header: {
+                "Idempotency-Key": string | null;
             };
             path?: never;
             cookie?: never;
@@ -4576,7 +4949,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description INSUFFICIENT_BALANCE (details: required_micros, available_micros, required, available, currency) — prepaid BRL balance; CHANNEL_BILLING_SUSPENDED (details: channel_id, amount_due_micros, available_micros) — monthly number fee overdue; BUSINESS_ALLOWANCE_REACHED (details: business_id, allowance_micros, used_micros, resets_at) — the business reached its monthly allowance */
+            /** @description SUBSCRIPTION_REQUIRED (details: reason trial_ended | no_plan | subscription_canceled | subscription_incomplete | trial_available), SUBSCRIPTION_PAST_DUE or ALLOWANCE_EXHAUSTED (details: reason, cycle_id, included_messages, used_messages, held_messages, cycle_ends_at, overage_limit_micros, overage_used_micros); all with message_pt and path /billing */
             402: {
                 headers: {
                     [name: string]: unknown;
@@ -5719,7 +6092,7 @@ export interface operations {
             };
         };
     };
-    billing_wallet: {
+    billing_subscription_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -5734,7 +6107,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WalletOut"];
+                    "application/json": components["schemas"]["SubscriptionOut"];
                 };
             };
             /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
@@ -5760,6 +6133,705 @@ export interface operations {
             };
         };
     };
+    billing_subscription_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional. Same key + same body → the same response (header `Idempotent-Replayed: true`); a different body → 409 IDEMPOTENCY_CONFLICT. 1–255 visible ASCII characters. */
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSubscriptionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionChangeResultOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CONFLICT (subscription_exists, subscription_not_active, reduction_scheduled, …) or IDEMPOTENCY_CONFLICT */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED or PAYMENT_METHOD_UNAVAILABLE */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description BILLING_NOT_CONFIGURED (no published plan version) or FEATURE_DISABLED */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_subscription_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionPreviewOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description BILLING_NOT_CONFIGURED */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_subscription_seats_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeatsPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeatsPreviewOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_subscription_seats_change: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeatsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeatsChangeOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CONFLICT (subscription_exists, subscription_not_active, reduction_scheduled, …) or IDEMPOTENCY_CONFLICT */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED or PAYMENT_METHOD_UNAVAILABLE */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description BILLING_NOT_CONFIGURED (no published plan version) or FEATURE_DISABLED */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_subscription_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CONFLICT (subscription_exists, subscription_not_active, reduction_scheduled, …) or IDEMPOTENCY_CONFLICT */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED or PAYMENT_METHOD_UNAVAILABLE */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description BILLING_NOT_CONFIGURED (no published plan version) or FEATURE_DISABLED */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_subscription_resume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_subscription_overage_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverageIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description OVERAGE_UNAVAILABLE (price_undefined | trial | feature_disabled) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_subscription_payment_method_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentMethodIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description PAYMENT_METHOD_UNAVAILABLE (card auto-renewal, Pix Automático, terms) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_allowance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllowanceOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND (channel_id or cycle_id filter of another integrator) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_allowance_consumptions_list: {
+        parameters: {
+            query?: {
+                cycle_id?: string | null;
+                channel_id?: string | null;
+                direction?: string | null;
+                classification?: string | null;
+                limit?: number | null;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumptionPage"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND (channel_id or cycle_id filter of another integrator) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_cycles_list: {
+        parameters: {
+            query?: {
+                limit?: number | null;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CyclePage"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_invoices_list: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                kind?: string | null;
+                limit?: number | null;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoicePage"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_invoices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_invoices_pay: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional. Same key + same body → the same response (header `Idempotent-Replayed: true`); a different body → 409 IDEMPOTENCY_CONFLICT. 1–255 visible ASCII characters. */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayInvoiceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CONFLICT (invoice not open) or IDEMPOTENCY_CONFLICT */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description PAYMENT_METHOD_UNAVAILABLE (wallet_terms_not_accepted, insufficient_paid_balance) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description PAYMENT_PROVIDER_UNAVAILABLE (attempt recorded; try again) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     billing_pricing: {
         parameters: {
             query?: never;
@@ -5775,7 +6847,48 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EffectivePricingOut"];
+                    "application/json": components["schemas"]["PricingOut"];
+                };
+            };
+            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    billing_wallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletOut"];
                 };
             };
             /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
@@ -5903,308 +7016,6 @@ export interface operations {
             };
         };
     };
-    billing_consumption: {
-        parameters: {
-            query?: {
-                /** @description YYYY-MM-DD (UTC, inclusive) */
-                from?: string | null;
-                /** @description YYYY-MM-DD (UTC, inclusive) */
-                to?: string | null;
-                group_by?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConsumptionOut"];
-                };
-            };
-            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDATION_FAILED */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    billing_number_fees_list: {
-        parameters: {
-            query?: {
-                channel_id?: string | null;
-                status?: string | null;
-                limit?: number | null;
-                cursor?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChannelFeePage"];
-                };
-            };
-            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDATION_FAILED */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    billing_number_fees_summary: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NumberFeeSummaryOut"];
-                };
-            };
-            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDATION_FAILED */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    billing_trial: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TrialOut"];
-                };
-            };
-            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDATION_FAILED */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    billing_settings_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SettingsOut"];
-                };
-            };
-            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDATION_FAILED */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    billing_settings_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BillingSettingsIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WalletOut"];
-                };
-            };
-            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDATION_FAILED */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    billing_bonus_offers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BonusOfferListOut"];
-                };
-            };
-            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDATION_FAILED */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     topups_list: {
         parameters: {
             query?: {
@@ -6225,53 +7036,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TopupPage"];
-                };
-            };
-            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDATION_FAILED */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    topups_create: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Idempotency-Key"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TopupIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TopupOut"];
                 };
             };
             /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
@@ -6326,60 +7090,6 @@ export interface operations {
             };
             /** @description NOT_FOUND */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDATION_FAILED */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    topups_request_refund: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                topup_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RefundRequestIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RefundRequestOut"];
-                };
-            };
-            /** @description FORBIDDEN (missing billing permission, API key restricted to businesses) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description CONFLICT (refund_window_expired, nothing_to_refund, already requested) */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };

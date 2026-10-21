@@ -2,15 +2,21 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://meshio.com.br/contracts/events/data/billing.trial_ended.schema.json",
   "title": "data for billing.trial_ended",
-  "description": "The trial period ended: monthly number fees start and the normal model applies. Envelope business_id and channel_id are null.",
+  "description": "The free trial ended. There is no automatic charge: new sends answer 402 SUBSCRIPTION_REQUIRED (reason trial_ended) until the integrator subscribes; inbound messages keep being received. A trial never restarts. Envelope business_id and channel_id are null.",
   "type": "object",
   "required": [
     "ended_at"
   ],
   "properties": {
+    "cycle_id": {
+      "type": "string",
+      "pattern": "^cyc_[A-Za-z0-9]+$",
+      "description": "Billing cycle id."
+    },
     "ended_at": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "End of the trial."
     }
   },
   "additionalProperties": true

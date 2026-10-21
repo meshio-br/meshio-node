@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/billing.subscription_updated.schema.json",
+  "title": "data for billing.subscription_updated",
+  "description": "The integrator's subscription changed (activated, seats added, reduction scheduled or canceled, cancellation scheduled or reverted, canceled, overage or payment method updated, past due, reactivated). action names the change; the other fields are the subscription after it. Envelope business_id and channel_id are null.",
+  "type": "object",
+  "required": [
+    "subscription_id",
+    "status",
+    "seats",
+    "cancel_at_period_end",
+    "action"
+  ],
+  "properties": {
+    "subscription_id": {
+      "type": "string",
+      "pattern": "^sub_[A-Za-z0-9]+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "incomplete",
+        "active",
+        "past_due",
+        "canceled"
+      ]
+    },
+    "seats": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Contracted seats (billable numbers)."
+    },
+    "scheduled_seats": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Seat reduction scheduled for the next renewal; null when none."
+    },
+    "current_period_end": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "End of the current paid cycle; null before the first payment."
+    },
+    "cancel_at_period_end": {
+      "type": "boolean"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "created",
+        "activated",
+        "seats_added",
+        "seats_reduction_scheduled",
+        "seats_reduction_canceled",
+        "cancel_scheduled",
+        "cancel_reverted",
+        "canceled",
+        "overage_updated",
+        "payment_method_updated",
+        "past_due",
+        "reactivated"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

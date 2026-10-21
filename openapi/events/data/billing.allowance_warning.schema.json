@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/billing.allowance_warning.schema.json",
+  "title": "data for billing.allowance_warning",
+  "description": "Allowance warning (80% of the cycle allowance). Same data as billing.allowance.common.schema.json.",
+  "allOf": [
+    {
+      "$ref": "billing.allowance.common.schema.json"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/billing.allowance_exhausted.schema.json",
+  "title": "data for billing.allowance_exhausted",
+  "description": "Allowance exhausted (100% of the cycle allowance): new sends are refused with 402 ALLOWANCE_EXHAUSTED unless overage is available and authorized. Same data as billing.allowance.common.schema.json.",
+  "allOf": [
+    {
+      "$ref": "billing.allowance.common.schema.json"
+    }
+  ]
+}

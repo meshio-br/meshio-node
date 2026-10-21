@@ -1,10 +1,11 @@
 {
-  "event_id": "evt_01J8Z3Q7K2M4N6P8R0S2T4V024",
-  "occurred_at": "2026-10-11T14:05:00Z",
+  "event_id": "evt_01J8Z3Q7K2M4N6P8R0S2T4VB09",
+  "occurred_at": "2026-10-20T15:30:00Z",
   "business_id": null,
   "channel_id": null,
   "event_type": "billing.trial_ended",
   "data": {
-    "ended_at": "2026-10-25T14:05:00Z"
+    "cycle_id": "cyc_01J8Z3Q7K2M4N6P8R0S2T4VT01",
+    "ended_at": "2026-10-23T15:30:00Z"
   }
 }

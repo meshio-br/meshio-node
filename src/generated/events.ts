@@ -1,139 +1,217 @@
 /* Arquivo gerado por scripts/generate-events.mjs. Não edite manualmente. */
 
 /**
- * Money entered the integrator's BRL wallet: a confirmed top-up, a top-up bonus or trial promotional balance, an opening balance or a positive operator adjustment. Envelope business_id and channel_id are null.
+ * Allowance exhausted (100% of the cycle allowance): new sends are refused with 402 ALLOWANCE_EXHAUSTED unless overage is available and authorized. Same data as billing.allowance.common.schema.json.
  */
-export interface BillingBalanceAddedData {
-  entry_id: string;
-  kind: "topup" | "bonus" | "opening_balance" | "adjustment" | "chargeback_reversal";
+export type BillingAllowanceExhaustedData = DataForBillingAllowanceWarningAndBillingAllowanceExhausted;
+
+/**
+ * The integrator used 80% (billing.allowance_warning) or 100% (billing.allowance_exhausted) of the message allowance of the current cycle. The allowance belongs to the integrator and is shared by all its numbers; it does not accumulate between cycles. Each event is sent at most once per cycle. While exhausted and without authorized overage, POST /v1/messages answers 402 ALLOWANCE_EXHAUSTED; inbound messages keep being received. Envelope business_id and channel_id are null.
+ */
+export interface DataForBillingAllowanceWarningAndBillingAllowanceExhausted {
   /**
-   * Amount added. Integer string in micros (R$ 1 = "1000000").
+   * Billing cycle id.
    */
-  amount_micros: string;
+  cycle_id: string;
   /**
-   * Wallet balance after the entry. Integer string in micros (R$ 1 = "1000000").
+   * trial = free trial cycle; paid = subscription cycle.
    */
-  balance_micros: string;
+  cycle_kind?: "trial" | "paid";
   /**
-   * Available after the entry. Integer string in micros (R$ 1 = "1000000").
+   * Messages included in the cycle, shared by all numbers of the integrator (base + prorated seat additions).
    */
-  available_micros: string;
+  included_messages: number;
   /**
-   * Top-up that originated the entry (topup and campaign bonus).
+   * Messages counted in the cycle (sent and delivered or read + new inbound).
    */
-  topup_id: string | null;
+  used_messages: number;
+  /**
+   * floor(used_messages / included_messages * 100); may exceed 100 (inbound messages are always received and counted).
+   */
+  percent: number;
+  /**
+   * End of the cycle (renewal or trial end), when the allowance renews.
+   */
+  cycle_ends_at: string;
   [k: string]: unknown;
 }
 
 /**
- * The integrator's free BRL balance (balance - reserved - pending) crossed below the configured low-balance threshold. Sent at most once per crossing. Money values are integer strings in micros (millionths of BRL). Envelope business_id and channel_id are null.
+ * Allowance warning (80% of the cycle allowance). Same data as billing.allowance.common.schema.json.
  */
-export interface BillingBalanceLowData {
+export type BillingAllowanceWarningData = DataForBillingAllowanceWarningAndBillingAllowanceExhausted;
+
+/**
+ * The integrator used 80% (billing.allowance_warning) or 100% (billing.allowance_exhausted) of the message allowance of the current cycle. The allowance belongs to the integrator and is shared by all its numbers; it does not accumulate between cycles. Each event is sent at most once per cycle. While exhausted and without authorized overage, POST /v1/messages answers 402 ALLOWANCE_EXHAUSTED; inbound messages keep being received. Envelope business_id and channel_id are null.
+ */
+/**
+ * An invoice was issued: the monthly fee of a cycle (issued before the renewal), prorated seats added mid-cycle or the overage of a closed cycle. Pay it through checkout_url (payment link) or, with consent, with the preserved paid balance. Envelope business_id and channel_id are null.
+ */
+export interface BillingInvoiceCreatedData {
+  invoice_id: string;
+  subscription_id?: string;
   /**
-   * Paid + bonus balance. Integer string in micros (R$ 1 = "1000000").
+   * subscription = monthly fee of the cycle; seat_addition = prorated seats added mid-cycle; overage = messages above the allowance (only with a published price and the integrator's authorization).
    */
-  balance_micros: string;
+  kind: "subscription" | "seat_addition" | "overage";
   /**
-   * Reserved for accepted sends awaiting delivery. Integer string in micros (R$ 1 = "1000000").
+   * Invoice total (multiple of 10000: whole cents). Integer string in micros (R$ 1 = "1000000").
    */
-  reserved_micros: string;
+  total_micros: string;
   /**
-   * What new sends can still use (balance - reserved - pending + credit limit). Integer string in micros (R$ 1 = "1000000").
+   * Due date.
    */
-  available_micros: string;
+  due_at: string;
   /**
-   * Configured alert threshold. Integer string in micros (R$ 1 = "1000000").
+   * Payment link (Pix or card); null when the invoice is paid with the preserved balance or the link is not generated yet.
    */
-  low_balance_threshold_micros: string;
-  /**
-   * Same as balance_micros as an exact decimal BRL string, e.g. "12.5".
-   */
-  balance: string;
+  checkout_url?: string | null;
   [k: string]: unknown;
 }
 
 /**
- * Charges (e.g. new inbound messages) could not be debited for lack of balance and were left pending; messages keep being received and delivered. Sent once per episode; pending charges are settled automatically on the next top-up. Envelope business_id and channel_id are null.
+ * Payment of an invoice was confirmed (re-read from the payment provider, paid with the preserved balance or registered by Meshio). Envelope business_id and channel_id are null.
  */
-export interface BillingChargesPendingData {
+export interface BillingInvoicePaidData {
+  invoice_id: string;
+  subscription_id?: string;
   /**
-   * Total pending. Integer string in micros (R$ 1 = "1000000").
+   * subscription = monthly fee of the cycle; seat_addition = prorated seats added mid-cycle; overage = messages above the allowance (only with a published price and the integrator's authorization).
    */
-  pending_micros: string;
+  kind: "subscription" | "seat_addition" | "overage";
   /**
-   * Available at the time. Integer string in micros (R$ 1 = "1000000").
+   * Invoice total. Integer string in micros (R$ 1 = "1000000").
    */
-  available_micros: string;
-  reason: "insufficient_balance";
+  total_micros: string;
+  /**
+   * Payment confirmation time.
+   */
+  paid_at: string;
+  /**
+   * wallet = preserved paid balance (opt-in); manual = registered by Meshio.
+   */
+  paid_via: "pix" | "card" | "wallet" | "manual";
   [k: string]: unknown;
 }
 
 /**
- * The trial period ended: monthly number fees start and the normal model applies. Envelope business_id and channel_id are null.
+ * An invoice is past due and unpaid: the subscription becomes past_due. After grace_until, new sends answer 402 SUBSCRIPTION_PAST_DUE until the invoice is paid; inbound messages, delivery events and webhooks never stop. Envelope business_id and channel_id are null.
+ */
+export interface BillingInvoicePastDueData {
+  invoice_id: string;
+  subscription_id?: string;
+  /**
+   * subscription = monthly fee of the cycle; seat_addition = prorated seats added mid-cycle; overage = messages above the allowance (only with a published price and the integrator's authorization).
+   */
+  kind?: "subscription" | "seat_addition" | "overage";
+  /**
+   * Invoice total. Integer string in micros (R$ 1 = "1000000").
+   */
+  total_micros: string;
+  /**
+   * Due date.
+   */
+  due_at: string;
+  /**
+   * End of the grace period; new sends are blocked from then on.
+   */
+  grace_until: string;
+  [k: string]: unknown;
+}
+
+/**
+ * The authorized overage reached the integrator's BRL limit for the cycle: new sends above the allowance are refused with 402 ALLOWANCE_EXHAUSTED (reason overage_limit_reached). Sent at most once per cycle. Envelope business_id and channel_id are null.
+ */
+export interface BillingOverageLimitReachedData {
+  /**
+   * Billing cycle id.
+   */
+  cycle_id: string;
+  /**
+   * Overage limit authorized for the cycle. Integer string in micros (R$ 1 = "1000000").
+   */
+  overage_limit_micros: string;
+  /**
+   * Overage already counted in the cycle (sends awaiting delivery included). Integer string in micros (R$ 1 = "1000000").
+   */
+  overage_used_micros: string;
+  [k: string]: unknown;
+}
+
+/**
+ * The integrator's subscription changed (activated, seats added, reduction scheduled or canceled, cancellation scheduled or reverted, canceled, overage or payment method updated, past due, reactivated). action names the change; the other fields are the subscription after it. Envelope business_id and channel_id are null.
+ */
+export interface BillingSubscriptionUpdatedData {
+  subscription_id: string;
+  status: "incomplete" | "active" | "past_due" | "canceled";
+  /**
+   * Contracted seats (billable numbers).
+   */
+  seats: number;
+  /**
+   * Seat reduction scheduled for the next renewal; null when none.
+   */
+  scheduled_seats?: number | null;
+  /**
+   * End of the current paid cycle; null before the first payment.
+   */
+  current_period_end?: string | null;
+  cancel_at_period_end: boolean;
+  action:
+    | "created"
+    | "activated"
+    | "seats_added"
+    | "seats_reduction_scheduled"
+    | "seats_reduction_canceled"
+    | "cancel_scheduled"
+    | "cancel_reverted"
+    | "canceled"
+    | "overage_updated"
+    | "payment_method_updated"
+    | "past_due"
+    | "reactivated";
+  [k: string]: unknown;
+}
+
+/**
+ * The free trial ended. There is no automatic charge: new sends answer 402 SUBSCRIPTION_REQUIRED (reason trial_ended) until the integrator subscribes; inbound messages keep being received. A trial never restarts. Envelope business_id and channel_id are null.
  */
 export interface BillingTrialEndedData {
+  /**
+   * Billing cycle id.
+   */
+  cycle_id?: string;
+  /**
+   * End of the trial.
+   */
   ended_at: string;
   [k: string]: unknown;
 }
 
 /**
- * The integrator's trial period ends soon (sent N days before and on the last day, once each). Envelope business_id and channel_id are null.
+ * The integrator's free trial ends soon (sent once, 3 days before the end). There is no automatic charge: to keep sending after the trial, subscribe. Envelope business_id and channel_id are null.
  */
 export interface BillingTrialEndingData {
+  /**
+   * Billing cycle id.
+   */
+  cycle_id?: string;
+  /**
+   * End of the trial.
+   */
   ends_at: string;
   days_left: number;
   /**
-   * Promotional/bonus balance still available. Integer string in micros (R$ 1 = "1000000").
+   * Messages included in the trial.
    */
-  bonus_balance_micros: string;
+  message_limit: number;
   /**
-   * Available balance. Integer string in micros (R$ 1 = "1000000").
+   * Messages counted in the trial so far.
    */
-  available_micros: string;
+  used_messages: number;
   [k: string]: unknown;
 }
 
-/**
- * Monthly allowance reached (100%). Same data as business.allowance.common.schema.json.
- */
-export type BusinessAllowanceReachedData = DataForBusinessAllowanceWarningAndBusinessAllowanceReached;
-
-/**
- * A business (customer) used 80% (business.allowance_warning) or 100% (business.allowance_reached) of the monthly allowance set by the integrator. Usage = Meshio charges of the business's messages (sent and delivered + new inbound, including charges pending for balance) plus sends awaiting delivery, in the calendar month of America/Sao_Paulo; number fees do not count. Each event is sent at most once per business per month (crossing both thresholds at once sends only business.allowance_reached); changing the allowance re-arms the thresholds that end up above the usage. While reached, POST /v1/messages for the business's channels answers 402 BUSINESS_ALLOWANCE_REACHED; inbound messages keep being received. Envelope business_id = the business; channel_id is null.
- */
-export interface DataForBusinessAllowanceWarningAndBusinessAllowanceReached {
-  business_id: string;
-  /**
-   * Month YYYY-MM (America/Sao_Paulo).
-   */
-  period: string;
-  /**
-   * Usage in the month. Integer string in micros (R$ 1 = "1000000").
-   */
-  used_micros: string;
-  /**
-   * Monthly allowance. Integer string in micros.
-   */
-  allowance_micros: string;
-  /**
-   * floor(used / allowance * 100); may exceed 100 (inbound messages are always charged).
-   */
-  percent: number;
-  /**
-   * First day of the next month (YYYY-MM-DD), when usage resets.
-   */
-  resets_at?: string;
-  [k: string]: unknown;
-}
-
-/**
- * Monthly allowance warning (80%). Same data as business.allowance.common.schema.json.
- */
-export type BusinessAllowanceWarningData = DataForBusinessAllowanceWarningAndBusinessAllowanceReached;
-
-/**
- * A business (customer) used 80% (business.allowance_warning) or 100% (business.allowance_reached) of the monthly allowance set by the integrator. Usage = Meshio charges of the business's messages (sent and delivered + new inbound, including charges pending for balance) plus sends awaiting delivery, in the calendar month of America/Sao_Paulo; number fees do not count. Each event is sent at most once per business per month (crossing both thresholds at once sends only business.allowance_reached); changing the allowance re-arms the thresholds that end up above the usage. While reached, POST /v1/messages for the business's channels answers 402 BUSINESS_ALLOWANCE_REACHED; inbound messages keep being received. Envelope business_id = the business; channel_id is null.
- */
 /**
  * Meshio suspended (state=active) or released (state=lifted) all sends of a business (customer) for compliance. Automatic holds come from Meta signals: account_update violation/restriction/ban/disable, 3+ templates paused in 7 days or 20+ Meta policy errors (131048, 131049, 368, 470) in 24 h; operators may also hold manually. While active, sends and new templates for the business are refused with 422 POLICY_BLOCKED (reason business_suspended) without calling Meta. Only a Meshio operator can lift a hold.
  */
@@ -218,69 +296,6 @@ export interface ChannelSnapshotSharedByChannelEvents {
   [k: string]: unknown;
 }
 
-/**
- * A monthly number fee could not be debited (available credits below the fee). The number keeps working during a 3-day grace period (grace_until); the charge is retried every 15 minutes and right after credits are added.
- */
-export type ChannelBillingPastDueData = SharedDataForChannelBilling_Events & {
-  billing_state?: "grace";
-  [k: string]: unknown;
-};
-
-/**
- * Monthly fee per WhatsApp number in BRL (monthly anniversary cycle, debited from the prepaid wallet). Envelope business_id and channel_id identify the number. Money values are integer strings in micros (millionths of BRL); timestamps are UTC ISO 8601.
- */
-export interface SharedDataForChannelBilling_Events {
-  channel_id: string;
-  business_id: string;
-  mode: "cloud_api" | "coexistence";
-  display_phone_number: string | null;
-  /**
-   * grace: fee overdue but the number still sends until grace_until; suspended: outbound sends answer 402 CHANNEL_BILLING_SUSPENDED (inbound keeps working).
-   */
-  billing_state: "ok" | "grace" | "suspended";
-  /**
-   * End of the open cycle (next renewal).
-   */
-  current_period_end: string | null;
-  grace_until: string | null;
-  suspended_at: string | null;
-  /**
-   * Overdue fees of this number (past_due). Integer string in micros (R$ 1 = "1000000").
-   */
-  amount_due_micros: string;
-  /**
-   * Wallet available balance at the time of the event. Integer string in micros (R$ 1 = "1000000").
-   */
-  available_micros: string;
-  /**
-   * Effective monthly fee for this number (default or custom price). Integer string in micros (R$ 1 = "1000000").
-   */
-  monthly_fee_micros: string;
-  [k: string]: unknown;
-}
-
-/**
- * All overdue fees of the number were paid (credits added) or waived by Meshio: sending works again immediately.
- */
-export type ChannelBillingResumedData = SharedDataForChannelBilling_Events & {
-  billing_state?: "ok";
-  [k: string]: unknown;
-};
-
-/**
- * Monthly fee per WhatsApp number in BRL (monthly anniversary cycle, debited from the prepaid wallet). Envelope business_id and channel_id identify the number. Money values are integer strings in micros (millionths of BRL); timestamps are UTC ISO 8601.
- */
-/**
- * The grace period ended with the fee still overdue: outbound sends through this number now answer 402 CHANNEL_BILLING_SUSPENDED. Inbound messages keep being received and delivered to webhooks; the Meta connection is untouched.
- */
-export type ChannelBillingSuspendedData = SharedDataForChannelBilling_Events & {
-  billing_state?: "suspended";
-  [k: string]: unknown;
-};
-
-/**
- * Monthly fee per WhatsApp number in BRL (monthly anniversary cycle, debited from the prepaid wallet). Envelope business_id and channel_id identify the number. Money values are integer strings in micros (millionths of BRL); timestamps are UTC ISO 8601.
- */
 /**
  * Meshio suspended (state=active) or released (state=lifted) sends of one WhatsApp number for compliance. Automatic holds happen when Meta's quality rating of the number turns RED; operators may also hold manually. While active, sends and new templates on the number are refused with 422 POLICY_BLOCKED (reason channel_compliance_hold) without calling Meta. Only a Meshio operator can lift a hold.
  */
@@ -592,18 +607,17 @@ export interface WebhookTestData {
 
 /** Mapa event_type → tipo de `data`. */
 export interface EventDataMap {
-  'billing.balance_added': BillingBalanceAddedData;
-  'billing.balance_low': BillingBalanceLowData;
-  'billing.charges_pending': BillingChargesPendingData;
+  'billing.allowance_exhausted': BillingAllowanceExhaustedData;
+  'billing.allowance_warning': BillingAllowanceWarningData;
+  'billing.invoice_created': BillingInvoiceCreatedData;
+  'billing.invoice_paid': BillingInvoicePaidData;
+  'billing.invoice_past_due': BillingInvoicePastDueData;
+  'billing.overage_limit_reached': BillingOverageLimitReachedData;
+  'billing.subscription_updated': BillingSubscriptionUpdatedData;
   'billing.trial_ended': BillingTrialEndedData;
   'billing.trial_ending': BillingTrialEndingData;
-  'business.allowance_reached': BusinessAllowanceReachedData;
-  'business.allowance_warning': BusinessAllowanceWarningData;
   'business.compliance_hold': BusinessComplianceHoldData;
   'channel.attention_required': ChannelAttentionRequiredData;
-  'channel.billing_past_due': ChannelBillingPastDueData;
-  'channel.billing_resumed': ChannelBillingResumedData;
-  'channel.billing_suspended': ChannelBillingSuspendedData;
   'channel.compliance_hold': ChannelComplianceHoldData;
   'channel.connected': ChannelConnectedData;
   'channel.disconnected': ChannelDisconnectedData;

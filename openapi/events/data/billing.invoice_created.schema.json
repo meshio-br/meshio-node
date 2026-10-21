@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/billing.invoice_created.schema.json",
+  "title": "data for billing.invoice_created",
+  "description": "An invoice was issued: the monthly fee of a cycle (issued before the renewal), prorated seats added mid-cycle or the overage of a closed cycle. Pay it through checkout_url (payment link) or, with consent, with the preserved paid balance. Envelope business_id and channel_id are null.",
+  "type": "object",
+  "required": [
+    "invoice_id",
+    "kind",
+    "total_micros",
+    "due_at"
+  ],
+  "properties": {
+    "invoice_id": {
+      "type": "string",
+      "pattern": "^inv_[A-Za-z0-9]+$"
+    },
+    "subscription_id": {
+      "type": "string",
+      "pattern": "^sub_[A-Za-z0-9]+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "subscription",
+        "seat_addition",
+        "overage"
+      ],
+      "description": "subscription = monthly fee of the cycle; seat_addition = prorated seats added mid-cycle; overage = messages above the allowance (only with a published price and the integrator's authorization)."
+    },
+    "total_micros": {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Invoice total (multiple of 10000: whole cents). Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "due_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Due date."
+    },
+    "checkout_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri",
+      "description": "Payment link (Pix or card); null when the invoice is paid with the preserved balance or the link is not generated yet."
+    }
+  },
+  "additionalProperties": true
+}

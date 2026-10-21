@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/billing.overage_limit_reached.schema.json",
+  "title": "data for billing.overage_limit_reached",
+  "description": "The authorized overage reached the integrator's BRL limit for the cycle: new sends above the allowance are refused with 402 ALLOWANCE_EXHAUSTED (reason overage_limit_reached). Sent at most once per cycle. Envelope business_id and channel_id are null.",
+  "type": "object",
+  "required": [
+    "cycle_id",
+    "overage_limit_micros",
+    "overage_used_micros"
+  ],
+  "properties": {
+    "cycle_id": {
+      "type": "string",
+      "pattern": "^cyc_[A-Za-z0-9]+$",
+      "description": "Billing cycle id."
+    },
+    "overage_limit_micros": {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Overage limit authorized for the cycle. Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "overage_used_micros": {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Overage already counted in the cycle (sends awaiting delivery included). Integer string in micros (R$ 1 = \"1000000\")."
+    }
+  },
+  "additionalProperties": true
+}

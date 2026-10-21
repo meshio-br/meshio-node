@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/billing.invoice_paid.schema.json",
+  "title": "data for billing.invoice_paid",
+  "description": "Payment of an invoice was confirmed (re-read from the payment provider, paid with the preserved balance or registered by Meshio). Envelope business_id and channel_id are null.",
+  "type": "object",
+  "required": [
+    "invoice_id",
+    "kind",
+    "total_micros",
+    "paid_at",
+    "paid_via"
+  ],
+  "properties": {
+    "invoice_id": {
+      "type": "string",
+      "pattern": "^inv_[A-Za-z0-9]+$"
+    },
+    "subscription_id": {
+      "type": "string",
+      "pattern": "^sub_[A-Za-z0-9]+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "subscription",
+        "seat_addition",
+        "overage"
+      ],
+      "description": "subscription = monthly fee of the cycle; seat_addition = prorated seats added mid-cycle; overage = messages above the allowance (only with a published price and the integrator's authorization)."
+    },
+    "total_micros": {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Invoice total. Integer string in micros (R$ 1 = \"1000000\")."
+    },
+    "paid_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Payment confirmation time."
+    },
+    "paid_via": {
+      "type": "string",
+      "enum": [
+        "pix",
+        "card",
+        "wallet",
+        "manual"
+      ],
+      "description": "wallet = preserved paid balance (opt-in); manual = registered by Meshio."
+    }
+  },
+  "additionalProperties": true
+}

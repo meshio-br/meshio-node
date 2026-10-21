@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meshio.com.br/contracts/events/data/billing.allowance.common.schema.json",
+  "title": "data for billing.allowance_warning and billing.allowance_exhausted",
+  "description": "The integrator used 80% (billing.allowance_warning) or 100% (billing.allowance_exhausted) of the message allowance of the current cycle. The allowance belongs to the integrator and is shared by all its numbers; it does not accumulate between cycles. Each event is sent at most once per cycle. While exhausted and without authorized overage, POST /v1/messages answers 402 ALLOWANCE_EXHAUSTED; inbound messages keep being received. Envelope business_id and channel_id are null.",
+  "type": "object",
+  "required": [
+    "cycle_id",
+    "included_messages",
+    "used_messages",
+    "percent",
+    "cycle_ends_at"
+  ],
+  "properties": {
+    "cycle_id": {
+      "type": "string",
+      "pattern": "^cyc_[A-Za-z0-9]+$",
+      "description": "Billing cycle id."
+    },
+    "cycle_kind": {
+      "type": "string",
+      "enum": [
+        "trial",
+        "paid"
+      ],
+      "description": "trial = free trial cycle; paid = subscription cycle."
+    },
+    "included_messages": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Messages included in the cycle, shared by all numbers of the integrator (base + prorated seat additions)."
+    },
+    "used_messages": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Messages counted in the cycle (sent and delivered or read + new inbound)."
+    },
+    "percent": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "floor(used_messages / included_messages * 100); may exceed 100 (inbound messages are always received and counted)."
+    },
+    "cycle_ends_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "End of the cycle (renewal or trial end), when the allowance renews."
+    }
+  },
+  "additionalProperties": true
+}
