@@ -66,6 +66,9 @@ export interface ApiResponse<T> {
 
 const RETRYABLE_SERVER_STATUS = new Set([500, 502, 503, 504]);
 
+/** 5xx que não são transitórios: repetir não muda o resultado (ex.: cobrança não configurada). */
+const NON_TRANSIENT_SERVER_CODES = new Set(['BILLING_NOT_CONFIGURED']);
+
 /** Códigos de erro que indicam falha ao abrir a conexão, ou seja, antes de enviar a requisição. */
 const CONNECT_ERROR_CODES = new Set([
   'ECONNREFUSED',
@@ -166,7 +169,8 @@ export class HttpClient {
     }
     const url = this.buildUrl(spec.path, spec.query);
     // Regra única de novas tentativas: 429 e falha de conexão antes do envio sempre;
-    // 5xx (500/502/503/504) e timeout só em GET ou com Idempotency-Key; outros 4xx nunca.
+    // 5xx (500/502/503/504) e timeout só em GET ou com Idempotency-Key; outros 4xx nunca;
+    // 503 BILLING_NOT_CONFIGURED nunca (não é transitório).
     const retrySafe = spec.method === 'GET' || idempotencyKey !== undefined;
     const maxRetries = options.maxRetries ?? this.maxRetries;
     const timeout = options.timeout ?? this.timeout;
@@ -202,24 +206,16 @@ export class HttpClient {
         };
       }
 
+      const parsed = await readErrorBody(response);
       const retryableStatus =
-        response.status === 429 || (retrySafe && RETRYABLE_SERVER_STATUS.has(response.status));
+        response.status === 429 ||
+        (retrySafe &&
+          RETRYABLE_SERVER_STATUS.has(response.status) &&
+          !NON_TRANSIENT_SERVER_CODES.has(errorCodeOf(parsed) ?? ''));
       if (hasBudget && retryableStatus) {
         const ra = parseRetryAfter(response.headers.get('retry-after'));
-        await response.arrayBuffer().catch(() => undefined);
         await this.sleep(ra !== undefined ? Math.min(ra * 1000, 60_000) : backoffMs(attempt));
         continue;
-      }
-      let parsed: unknown;
-      try {
-        const text = await response.text();
-        try {
-          parsed = text ? JSON.parse(text) : undefined;
-        } catch {
-          parsed = text;
-        }
-      } catch {
-        parsed = undefined;
       }
       throw errorFromResponse(response.status, parsed, response.headers);
     }
@@ -278,4 +274,23 @@ async function readBody(response: Response, type: RequestSpec['responseType']): 
   } catch {
     return text;
   }
+}
+
+async function readErrorBody(response: Response): Promise<unknown> {
+  try {
+    const text = await response.text();
+    try {
+      return text ? JSON.parse(text) : undefined;
+    } catch {
+      return text;
+    }
+  } catch {
+    return undefined;
+  }
+}
+
+function errorCodeOf(body: unknown): string | undefined {
+  if (!body || typeof body !== 'object') return undefined;
+  const code = (body as { error?: { code?: unknown } }).error?.code;
+  return typeof code === 'string' ? code : undefined;
 }

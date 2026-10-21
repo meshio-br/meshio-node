@@ -6,7 +6,7 @@ Todas as mudanças relevantes deste pacote. Formato baseado em [Keep a Changelog
 
 ### Alterado
 
-- Regra única de novas tentativas: 429 e falha de conexão antes do envio sempre; 5xx e tempo esgotado só em `GET` ou com `Idempotency-Key`; `PUT` deixa de ser tratado como repetível.
+- Regra única de novas tentativas: 429 e falha de conexão antes do envio sempre; 5xx e tempo esgotado só em `GET` ou com `Idempotency-Key`, exceto 503 `BILLING_NOT_CONFIGURED`, que não é transitório e nunca é repetido; `PUT` deixa de ser tratado como repetível.
 
 ### Adicionado
 

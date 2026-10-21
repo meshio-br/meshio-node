@@ -274,6 +274,24 @@ describe('novas tentativas', () => {
     expect(f.calls).toHaveLength(3);
   });
 
+  it('não repete 503 BILLING_NOT_CONFIGURED (não é transitório)', async () => {
+    const f = mockFetch(
+      apiError(503, 'BILLING_NOT_CONFIGURED', 'Cobrança não configurada'),
+      json(200, { ok: true }),
+    );
+    const err = await client(f.fn)
+      .billing.subscription.get()
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(ServerError);
+    expect(err.code).toBe('BILLING_NOT_CONFIGURED');
+    expect(f.calls).toHaveLength(1);
+    const g = mockFetch(apiError(503, 'BILLING_NOT_CONFIGURED', 'x'), json(201, { id: 'sub_1' }));
+    await expect(
+      client(g.fn).billing.subscription.create({ seats: 1 } as never),
+    ).rejects.toBeInstanceOf(ServerError);
+    expect(g.calls).toHaveLength(1);
+  });
+
   it('não repete outros 4xx', async () => {
     const f = mockFetch(apiError(404, 'NOT_FOUND', 'x'));
     await expect(client(f.fn).businesses.get('b')).rejects.toBeInstanceOf(NotFoundError);

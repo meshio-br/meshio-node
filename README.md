@@ -150,6 +150,7 @@ O SDK faz até `maxRetries` novas tentativas (padrão 2), esperando o `Retry-Aft
 
 - 429 e falha de conexão antes de a requisição sair (ex.: conexão recusada, DNS): sempre repetidos;
 - 500, 502, 503, 504 e tempo esgotado: repetidos só em `GET` ou quando há `Idempotency-Key` (`messages.send`, `billing.subscription.create`, `billing.subscription.seats.change` e `billing.invoices.pay` sempre levam uma, gerada pelo SDK se você não informar);
+- 503 `BILLING_NOT_CONFIGURED`: nunca repetido (não é transitório; a cobrança precisa ser configurada antes);
 - outros 4xx: nunca repetidos.
 
 Por chamada: `{ timeout, maxRetries, signal, idempotencyKey, headers }` no último argumento.
