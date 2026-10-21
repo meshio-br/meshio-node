@@ -400,13 +400,13 @@ describe('idempotência', () => {
     expect(g.calls[0]!.body).toEqual({ method: 'link' });
   });
 
-  it('billing.subscription.seats.change: chave opcional; sem chave não repete', async () => {
-    const f = mockFetch(json(500, {}));
-    await expect(client(f.fn).billing.subscription.seats.change({ add: 1 })).rejects.toBeInstanceOf(
-      ServerError,
-    );
-    expect(f.calls).toHaveLength(1);
-    expect(f.calls[0]!.headers.has('idempotency-key')).toBe(false);
+  it('billing.subscription.seats.change gera UUID v4 e reutiliza nas tentativas', async () => {
+    const f = mockFetch(json(500, {}), json(200, { seats: 3 }));
+    await client(f.fn).billing.subscription.seats.change({ add: 1 });
+    const keys = f.calls.map((c) => c.headers.get('idempotency-key'));
+    expect(f.calls).toHaveLength(2);
+    expect(keys[0]).toMatch(UUID_V4);
+    expect(keys[1]).toBe(keys[0]);
 
     const g = mockFetch(json(500, {}), json(200, { seats: 3 }));
     await client(g.fn).billing.subscription.seats.change({ add: 1 }, { idempotencyKey: 'k1' });

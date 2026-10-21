@@ -107,14 +107,14 @@ export class SubscriptionSeats extends APIResource {
   /**
    * POST /v1/billing/subscription/seats — `{add}` (imediato, fatura proporcional), `{target}`
    * (redução na renovação) ou `{cancel_scheduled_reduction: true}`.
-   * `Idempotency-Key` opcional (via `options.idempotencyKey`): com `{add}`, a mesma chave devolve
-   * a mesma fatura. Sem chave, a requisição não é repetida automaticamente em falhas.
+   * Leva `Idempotency-Key`: se não informada, o SDK gera um UUID v4 e o reaproveita nas novas
+   * tentativas; com `{add}`, a mesma chave devolve a mesma fatura proporcional.
    */
   change(
     body: BodyOf<'billing_subscription_seats_change'>,
     options?: O,
   ): Promise<WithIdempotency<ResponseOf<'billing_subscription_seats_change'>>> {
-    return this._idempotent('/v1/billing/subscription/seats', body, 'optional', options);
+    return this._idempotent('/v1/billing/subscription/seats', body, 'required', options);
   }
 }
 

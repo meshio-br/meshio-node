@@ -149,7 +149,7 @@ try {
 O SDK faz até `maxRetries` novas tentativas (padrão 2), esperando o `Retry-After` quando houver ou 0,5 s, 1 s, 2 s… (máx. 8 s, com variação aleatória):
 
 - 429 e falha de conexão antes de a requisição sair (ex.: conexão recusada, DNS): sempre repetidos;
-- 500, 502, 503, 504 e tempo esgotado: repetidos só em `GET` ou quando há `Idempotency-Key` (`messages.send`, `billing.subscription.create` e `billing.invoices.pay` sempre levam uma, gerada pelo SDK se você não informar; `billing.subscription.seats.change` só quando você informa);
+- 500, 502, 503, 504 e tempo esgotado: repetidos só em `GET` ou quando há `Idempotency-Key` (`messages.send`, `billing.subscription.create`, `billing.subscription.seats.change` e `billing.invoices.pay` sempre levam uma, gerada pelo SDK se você não informar);
 - outros 4xx: nunca repetidos.
 
 Por chamada: `{ timeout, maxRetries, signal, idempotencyKey, headers }` no último argumento.
@@ -185,7 +185,7 @@ try {
 
 Outros bloqueios de envio também chegam como `PaymentRequiredError` (402): `SUBSCRIPTION_REQUIRED` (`reason`: `trial_ended`, `no_plan`, `subscription_canceled`, `subscription_incomplete`) e `SUBSCRIPTION_PAST_DUE`. Conectar número sem vaga livre dá `ConflictError` com `code === 'NUMBER_LIMIT_REACHED'`. Recebimentos e webhooks nunca são bloqueados.
 
-`billing.subscription.create` e `billing.invoices.pay` levam `Idempotency-Key` automaticamente (repetir com a mesma chave não cobra de novo). Rotas do modelo antigo de saldo pré-pago respondem `GoneError` (`410 DISCONTINUED`); o saldo anterior continua consultável em `billing.wallet()`.
+`billing.subscription.create`, `billing.subscription.seats.change` e `billing.invoices.pay` levam `Idempotency-Key` automaticamente (repetir com a mesma chave não cobra de novo). Rotas do modelo antigo de saldo pré-pago respondem `GoneError` (`410 DISCONTINUED`); o saldo anterior continua consultável em `billing.wallet()`.
 
 ## Dinheiro em micros
 
