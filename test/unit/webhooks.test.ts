@@ -73,6 +73,25 @@ describe('webhooks — comportamento', () => {
     expect(() => verify(v.body, lower, v.secret)).toThrow(/tolerância/);
   });
 
+  it('eventos de cobrança novos são reconhecidos', () => {
+    const ts = 1_800_000_000;
+    const body = readFileSync(
+      new URL('../../openapi/events/examples/billing.allowance_exhausted.json', import.meta.url),
+      'utf8',
+    );
+    const ev = verify(
+      body,
+      { 'Meshio-Timestamp': String(ts), 'Meshio-Signature': computeSignature(body, ts, 'whsec_x') },
+      'whsec_x',
+      { now: ts },
+    );
+    expect(isEventType(ev, 'billing.allowance_exhausted')).toBe(true);
+    if (isEventType(ev, 'billing.allowance_exhausted')) {
+      expect(ev.data.percent).toBe(100);
+      expect(ev.data.cycle_id).toMatch(/^cyc_/);
+    }
+  });
+
   it('tipos desconhecidos não quebram e isEventType restringe', () => {
     const ts = 1_800_000_000;
     const body = JSON.stringify({ event_id: 'evt_1', event_type: 'future.thing', data: { a: 1 } });
