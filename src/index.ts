@@ -16,10 +16,13 @@ export {
 export {
   AuthenticationError,
   BadRequestError,
+  type BillingErrorCode,
   ConflictError,
   ConnectionError,
+  GoneError,
   MeshioError,
   NotFoundError,
+  PaymentRequiredError,
   PermissionDeniedError,
   PolicyBlockedError,
   RateLimitError,

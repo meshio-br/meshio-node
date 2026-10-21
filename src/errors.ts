@@ -3,6 +3,30 @@
  * em pt-BR vem em `details.message_pt` (exposta em `messagePt`) e, em validação, em `details.fields`.
  */
 
+/**
+ * Códigos de erro da cobrança por assinatura. Todos trazem `details.message_pt` e, quando há
+ * motivo, `details.reason` (exposto em `reason`).
+ *
+ * - 402 `SUBSCRIPTION_REQUIRED` (`trial_ended`, `no_plan`, `subscription_canceled`,
+ *   `subscription_incomplete`), `SUBSCRIPTION_PAST_DUE`, `ALLOWANCE_EXHAUSTED`
+ *   (`allowance_exhausted`, `trial_allowance_exhausted`, `overage_unavailable`,
+ *   `overage_not_authorized`, `overage_limit_reached`);
+ * - 409 `NUMBER_LIMIT_REACHED` (`trial`, `seats`, `no_active_plan`), `OVERAGE_UNAVAILABLE`
+ *   (`price_undefined`, `trial`, `feature_disabled`);
+ * - 422 `PAYMENT_METHOD_UNAVAILABLE`;
+ * - 503 `BILLING_NOT_CONFIGURED` (nenhuma tabela de preços publicada);
+ * - 410 `DISCONTINUED` (rota do modelo antigo; `details.replacement` indica a substituta).
+ */
+export type BillingErrorCode =
+  | 'SUBSCRIPTION_REQUIRED'
+  | 'SUBSCRIPTION_PAST_DUE'
+  | 'ALLOWANCE_EXHAUSTED'
+  | 'NUMBER_LIMIT_REACHED'
+  | 'OVERAGE_UNAVAILABLE'
+  | 'PAYMENT_METHOD_UNAVAILABLE'
+  | 'BILLING_NOT_CONFIGURED'
+  | 'DISCONTINUED';
+
 export interface MeshioErrorInit {
   status?: number;
   code?: string;
@@ -20,6 +44,8 @@ export class MeshioError extends Error {
   readonly headers: Headers | undefined;
   /** Explicação em pt-BR enviada pela API em `details.message_pt`, quando houver. */
   readonly messagePt: string | undefined;
+  /** Motivo detalhado em `details.reason`, quando houver (ex.: `trial_ended`, `seats`). */
+  readonly reason: string | undefined;
 
   constructor(message: string, init: MeshioErrorInit = {}) {
     super(message, init.cause === undefined ? undefined : { cause: init.cause });
@@ -31,17 +57,33 @@ export class MeshioError extends Error {
     this.headers = init.headers;
     const pt = this.details.message_pt;
     this.messagePt = typeof pt === 'string' && pt ? pt : undefined;
+    const reason = this.details.reason;
+    this.reason = typeof reason === 'string' && reason ? reason : undefined;
   }
 }
 
 export class BadRequestError extends MeshioError {}
 export class AuthenticationError extends MeshioError {}
+/**
+ * 402: envio bloqueado pela cobrança (`SUBSCRIPTION_REQUIRED`, `SUBSCRIPTION_PAST_DUE`,
+ * `ALLOWANCE_EXHAUSTED`). Veja `reason` e `messagePt`.
+ */
+export class PaymentRequiredError extends MeshioError {}
 export class PermissionDeniedError extends MeshioError {}
 export class NotFoundError extends MeshioError {}
-/** 409, inclusive `IDEMPOTENCY_CONFLICT`. */
+/** 410 `DISCONTINUED`: rota do modelo antigo. `replacement` indica a rota que a substitui. */
+export class GoneError extends MeshioError {
+  readonly replacement: string | undefined;
+  constructor(message: string, init: MeshioErrorInit = {}) {
+    super(message, init);
+    const r = this.details.replacement;
+    this.replacement = typeof r === 'string' && r ? r : undefined;
+  }
+}
+/** 409, inclusive `IDEMPOTENCY_CONFLICT`, `NUMBER_LIMIT_REACHED` e `OVERAGE_UNAVAILABLE`. */
 export class ConflictError extends MeshioError {}
 
-/** 422. `fields` traz o mapa campo → mensagem de `details.fields`. */
+/** 422 (inclusive `PAYMENT_METHOD_UNAVAILABLE`). `fields` traz o mapa campo → mensagem de `details.fields`. */
 export class ValidationError extends MeshioError {
   readonly fields: Record<string, string>;
   constructor(message: string, init: MeshioErrorInit = {}) {
@@ -59,6 +101,7 @@ export class RateLimitError extends MeshioError {
   }
 }
 
+/** 5xx, inclusive 503 `BILLING_NOT_CONFIGURED`. */
 export class ServerError extends MeshioError {}
 /** `code == "POLICY_BLOCKED"`; preserva o status HTTP original. */
 export class PolicyBlockedError extends MeshioError {}
@@ -118,12 +161,16 @@ export function errorFromResponse(status: number, body: unknown, headers: Header
       return new BadRequestError(message, init);
     case 401:
       return new AuthenticationError(message, init);
+    case 402:
+      return new PaymentRequiredError(message, init);
     case 403:
       return new PermissionDeniedError(message, init);
     case 404:
       return new NotFoundError(message, init);
     case 409:
       return new ConflictError(message, init);
+    case 410:
+      return new GoneError(message, init);
     case 422:
       return new ValidationError(message, init);
     case 429:

@@ -4,9 +4,11 @@ import {
   BadRequestError,
   ConflictError,
   ConnectionError,
+  GoneError,
   Meshio,
   MeshioError,
   NotFoundError,
+  PaymentRequiredError,
   PermissionDeniedError,
   PolicyBlockedError,
   RateLimitError,
@@ -78,8 +80,16 @@ describe('mapeamento de erros', () => {
     [403, 'FORBIDDEN', PermissionDeniedError],
     [404, 'NOT_FOUND', NotFoundError],
     [409, 'IDEMPOTENCY_CONFLICT', ConflictError],
-    [402, 'INSUFFICIENT_BALANCE', MeshioError],
+    [402, 'SUBSCRIPTION_REQUIRED', PaymentRequiredError],
+    [402, 'SUBSCRIPTION_PAST_DUE', PaymentRequiredError],
+    [402, 'ALLOWANCE_EXHAUSTED', PaymentRequiredError],
+    [409, 'NUMBER_LIMIT_REACHED', ConflictError],
+    [409, 'OVERAGE_UNAVAILABLE', ConflictError],
+    [410, 'DISCONTINUED', GoneError],
+    [422, 'PAYMENT_METHOD_UNAVAILABLE', ValidationError],
+    [418, 'UNKNOWN_STATUS', MeshioError],
     [500, 'INTERNAL', ServerError],
+    [503, 'BILLING_NOT_CONFIGURED', ServerError],
   ];
   for (const [status, code, Cls] of cases) {
     it(`${status} ${code} → ${Cls.name}`, async () => {
@@ -143,6 +153,62 @@ describe('mapeamento de erros', () => {
       .businesses.get('b')
       .catch((e) => e);
     expect(plain.messagePt).toBeUndefined();
+  });
+
+  it('402 ALLOWANCE_EXHAUSTED expõe reason, messagePt e details', async () => {
+    const f = mockFetch(
+      apiError(402, 'ALLOWANCE_EXHAUSTED', 'message allowance exhausted for the current cycle', {
+        reason: 'overage_unavailable',
+        cycle_id: 'cyc_1',
+        included_messages: 30000,
+        used_messages: 29998,
+        held_messages: 2,
+        cycle_ends_at: '2026-11-20T14:00:00Z',
+        message_pt: 'A franquia de mensagens deste ciclo acabou.',
+      }),
+    );
+    const err = await client(f.fn)
+      .messages.send(sendBody)
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(PaymentRequiredError);
+    expect(err.code).toBe('ALLOWANCE_EXHAUSTED');
+    expect(err.reason).toBe('overage_unavailable');
+    expect(err.messagePt).toBe('A franquia de mensagens deste ciclo acabou.');
+    expect(err.details.cycle_ends_at).toBe('2026-11-20T14:00:00Z');
+    expect(f.calls).toHaveLength(1); // 402 nunca é repetido
+  });
+
+  it('409 NUMBER_LIMIT_REACHED expõe reason', async () => {
+    const f = mockFetch(
+      apiError(409, 'NUMBER_LIMIT_REACHED', 'number limit reached', {
+        reason: 'seats',
+        message_pt: 'Limite de números conectados atingido.',
+      }),
+    );
+    const err = await client(f.fn)
+      .channels.signupSessions.complete('ses_1', {} as never)
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(ConflictError);
+    expect(err.reason).toBe('seats');
+    expect(err.messagePt).toBe('Limite de números conectados atingido.');
+  });
+
+  it('410 DISCONTINUED → GoneError com replacement', async () => {
+    const f = mockFetch(
+      apiError(410, 'DISCONTINUED', 'this resource was discontinued', {
+        reason: 'discontinued',
+        replacement: '/v1/billing/subscription',
+        message_pt: 'Este recurso foi descontinuado.',
+      }),
+    );
+    const res = await client(f.fn)
+      .http.request({ method: 'GET', path: '/v1/billing/trial' })
+      .catch((e) => e);
+    expect(res).toBeInstanceOf(GoneError);
+    expect(res.status).toBe(410);
+    expect(res.replacement).toBe('/v1/billing/subscription');
+    expect(res.reason).toBe('discontinued');
+    expect(f.calls).toHaveLength(1);
   });
 
   it('POLICY_BLOCKED → PolicyBlockedError preservando status', async () => {
@@ -296,20 +362,67 @@ describe('idempotência', () => {
     expect(res.idempotent_replay).toBe(true);
   });
 
-  it('topups.create: chave opcional; sem chave não repete', async () => {
+  it('billing.subscription.create gera UUID v4 e reutiliza nas tentativas', async () => {
+    const f = mockFetch(json(502, {}), json(201, { subscription: { status: 'incomplete' } }));
+    const res = await client(f.fn).billing.subscription.create({
+      seats: 3,
+      payment_method: 'invoice_link',
+    });
+    const keys = f.calls.map((c) => c.headers.get('idempotency-key'));
+    expect(f.calls).toHaveLength(2);
+    expect(keys[0]).toMatch(UUID_V4);
+    expect(keys[1]).toBe(keys[0]);
+    expect(f.calls[0]!.url.pathname).toBe('/v1/billing/subscription');
+    expect(f.calls[0]!.body).toEqual({ seats: 3, payment_method: 'invoice_link' });
+    expect(res.idempotent_replay).toBe(false);
+  });
+
+  it('billing.invoices.pay gera chave, usa corpo padrão e expõe Idempotent-Replayed', async () => {
+    const f = mockFetch(
+      json(503, {}),
+      json(200, { id: 'inv_1' }, { 'Idempotent-Replayed': 'true' }),
+    );
+    const res = await client(f.fn).billing.invoices.pay('inv_1');
+    const keys = f.calls.map((c) => c.headers.get('idempotency-key'));
+    expect(keys[0]).toMatch(UUID_V4);
+    expect(keys[1]).toBe(keys[0]);
+    expect(f.calls[0]!.url.pathname).toBe('/v1/billing/invoices/inv_1/pay');
+    expect(f.calls[0]!.body).toEqual({});
+    expect(res.idempotent_replay).toBe(true);
+
+    const g = mockFetch(json(200, { id: 'inv_1' }));
+    await client(g.fn).billing.invoices.pay(
+      'inv_1',
+      { method: 'link' },
+      { idempotencyKey: 'fat-1' },
+    );
+    expect(g.calls[0]!.headers.get('idempotency-key')).toBe('fat-1');
+    expect(g.calls[0]!.body).toEqual({ method: 'link' });
+  });
+
+  it('billing.subscription.seats.change: chave opcional; sem chave não repete', async () => {
     const f = mockFetch(json(500, {}));
-    await expect(
-      client(f.fn).billing.topups.create({ amount_cents: 1000 } as never),
-    ).rejects.toBeInstanceOf(ServerError);
+    await expect(client(f.fn).billing.subscription.seats.change({ add: 1 })).rejects.toBeInstanceOf(
+      ServerError,
+    );
     expect(f.calls).toHaveLength(1);
     expect(f.calls[0]!.headers.has('idempotency-key')).toBe(false);
 
-    const g = mockFetch(json(500, {}), json(201, { id: 'top_1' }));
-    const res = await client(g.fn).billing.topups.create({ amount_cents: 1000 } as never, {
-      idempotencyKey: 'k1',
-    });
+    const g = mockFetch(json(500, {}), json(200, { seats: 3 }));
+    await client(g.fn).billing.subscription.seats.change({ add: 1 }, { idempotencyKey: 'k1' });
     expect(g.calls.map((c) => c.headers.get('idempotency-key'))).toEqual(['k1', 'k1']);
-    expect(res.id).toBe('top_1');
+  });
+
+  it('demais POST de cobrança sem chave não são repetidos em 5xx', async () => {
+    const f = mockFetch(json(502, {}));
+    await expect(client(f.fn).billing.subscription.cancel()).rejects.toBeInstanceOf(ServerError);
+    expect(f.calls).toHaveLength(1);
+    expect(f.calls[0]!.headers.has('idempotency-key')).toBe(false);
+    const g = mockFetch(json(503, {}));
+    await expect(client(g.fn).billing.subscription.preview({ seats: 2 })).rejects.toBeInstanceOf(
+      ServerError,
+    );
+    expect(g.calls).toHaveLength(1);
   });
 });
 
