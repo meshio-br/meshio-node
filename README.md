@@ -165,7 +165,7 @@ import { PaymentRequiredError, microsToReais } from '@meshio/sdk';
 const sub = await meshio.billing.subscription.get();
 console.log(sub.status, sub.seats, sub.connected_numbers);   // 'active', 3, 2
 console.log(sub.current_cycle?.period_end);                   // fim do ciclo (renovação)
-if (sub.monthly_total_micros) console.log(microsToReais(sub.monthly_total_micros, 2)); // "149.70"
+if (sub.monthly_total_micros) console.log(microsToReais(sub.monthly_total_micros, 2)); // "179.70"
 
 const allowance = await meshio.billing.allowance.get();
 console.log(`${allowance.remaining_messages} de ${allowance.included_messages} mensagens restantes (${allowance.percent}% usado)`);
@@ -196,8 +196,8 @@ Valores monetários chegam como string em micros (R$ 1 = `"1000000"`). Não conv
 import { microsToReais } from '@meshio/sdk';
 
 const { unit_price_micros } = await meshio.billing.subscription.preview({ seats: 3 });
-microsToReais(unit_price_micros);    // "49.9"
-microsToReais(unit_price_micros, 2); // "49.90"
+microsToReais(unit_price_micros);    // "59.9"
+microsToReais(unit_price_micros, 2); // "59.90"
 ```
 
 ## Recursos
