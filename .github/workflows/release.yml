@@ -1,34 +1,48 @@
 name: Release
 
+# O SDK não é publicado em registro de pacotes: a instalação é direto do GitHub
+# pela tag (npm install github:meshio-br/meshio-node#vX.Y.Z). Este fluxo valida a
+# tag, roda os testes e cria a release no GitHub com as notas do CHANGELOG.
 on:
   push:
     tags: ['v*']
 
 permissions:
-  contents: read
-  id-token: write
+  contents: write
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
           cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
       - name: Confere versão da tag
         run: |
           PKG_VERSION="v$(node -p "require('./package.json').version")"
           if [ "$PKG_VERSION" != "$GITHUB_REF_NAME" ]; then
             echo "Tag $GITHUB_REF_NAME difere da versão do package.json ($PKG_VERSION)"; exit 1
           fi
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
       - run: npm run build
-      - run: npm publish --provenance --access public
+      - name: Notas da versão
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            /^## \[/ { inside = index($0, "[" v "]") > 0; next }
+            /^\[[^]]+\]: / { next }
+            inside { print }
+          ' CHANGELOG.md > release-notes.md
+          test -s release-notes.md || { echo "CHANGELOG.md não tem a seção [$version]"; exit 1; }
+      - name: Criar release no GitHub
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PRERELEASE=""
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then PRERELEASE="--prerelease"; fi
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md --verify-tag $PRERELEASE

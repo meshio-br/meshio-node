@@ -5,8 +5,10 @@ SDK oficial da [API Meshio](https://app.meshio.com.br/docs) para TypeScript e Ja
 ## Instalação
 
 ```bash
-npm install @meshio/sdk
+npm install github:meshio-br/meshio-node#v0.1.0
 ```
+
+O SDK é instalado direto do GitHub, fixando a tag da versão (não há pacote em registro). Na instalação, o npm compila o pacote pelo script `prepare`. O import continua `@meshio/sdk`.
 
 ## Configuração
 
