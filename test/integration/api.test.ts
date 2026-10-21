@@ -239,8 +239,12 @@ describe.skipIf(!run || !simUrl)('integração com o Simulador (MESHIO_TEST_SIM_
   }
 
   it('conecta número, recebe mensagem, envia com idempotência e desconecta', async () => {
-    const biz = (await meshio.businesses.list({ limit: 1 })).data[0];
-    expect(biz).toBeDefined();
+    // Envio exige cliente verificado (CNPJ e atividade): usa um já verificado.
+    const verified = (await meshio.compliance.status()).businesses.find(
+      (b) => b.verification_status === 'verified' && !b.suspended,
+    );
+    expect(verified).toBeDefined();
+    const biz = { id: verified!.business_id };
 
     // Sem vaga livre, conectar responde 409 NUMBER_LIMIT_REACHED (vaga não é número).
     const sub = await meshio.billing.subscription.get();
